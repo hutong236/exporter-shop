@@ -1,0 +1,25 @@
+# apache_exporter — Exporter 商店清单（单类型源文件）
+#
+# 格式与校验权威：平台仓库 backend/internal/console/registry/registry.go（TypeDef schema）。
+# 根 exporter-types.yaml 由 scripts/build.py 自动聚合生成，请勿手改根文件。
+# 上游实际配置核验记录：docs/upstream-verification.md。
+types:
+    - name: apache_exporter
+      label: Apache（市场）
+      preface: 前置：启用 mod_status，且地址须带 ?auto 后缀（缺后缀只有 up/CPU 指标）。
+      configless: true
+      requires_devices: false
+      metrics_port: 9117
+      health_path: /
+      image: quay.io/lusitaniae/apache-exporter:v1.1.0
+      args_template:
+        - --scrape_uri={{.apache_scrape_uri}}
+      listen_default: ""
+      device_port_default: 0
+      fields:
+        - key: apache_scrape_uri
+          label: server-status 地址
+          kind: text
+          default: http://localhost/server-status?auto
+          to: arg
+          hint: 必须带 ?auto 后缀

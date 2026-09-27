@@ -1,0 +1,34 @@
+# mongodb_exporter — Exporter 商店清单（单类型源文件）
+#
+# 格式与校验权威：平台仓库 backend/internal/console/registry/registry.go（TypeDef schema）。
+# 根 exporter-types.yaml 由 scripts/build.py 自动聚合生成，请勿手改根文件。
+# 上游实际配置核验记录：docs/upstream-verification.md。
+types:
+    - name: mongodb_exporter
+      label: MongoDB（市场）
+      preface: 凭据走环境变量（官方明确命令行 flag 会经 ps 泄漏）；建议为监控账号只授予 clusterMonitor 角色。
+      configless: true
+      requires_devices: false
+      metrics_port: 9216
+      health_path: /
+      image: percona/mongodb_exporter:0.43.1
+      listen_default: ""
+      device_port_default: 0
+      fields:
+        - key: mongodb_uri
+          label: MongoDB 地址
+          kind: text
+          to: env
+          env: MONGODB_URI
+          hint: mongodb://host:27017（凭据可用下方账号密码单独提供）
+        - key: mongodb_user
+          label: 账号
+          kind: text
+          to: env
+          env: MONGODB_USER
+        - key: mongodb_password
+          label: 密码
+          kind: password
+          sensitive: true
+          to: env
+          env: MONGODB_PASSWORD

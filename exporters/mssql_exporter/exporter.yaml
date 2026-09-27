@@ -1,0 +1,40 @@
+# mssql_exporter — Exporter 商店清单（单类型源文件）
+#
+# 格式与校验权威：平台仓库 backend/internal/console/registry/registry.go（TypeDef schema）。
+# 根 exporter-types.yaml 由 scripts/build.py 自动聚合生成，请勿手改根文件。
+# 上游实际配置核验记录：docs/upstream-verification.md。
+types:
+    - name: mssql_exporter
+      label: SQL Server（市场）
+      preface: 数据库侧需授权：GRANT VIEW ANY DEFINITION、GRANT VIEW SERVER STATE。
+      configless: true
+      requires_devices: false
+      metrics_port: 4000
+      health_path: /
+      image: awaragi/prometheus-mssql-exporter:v1.3.0
+      listen_default: ""
+      device_port_default: 0
+      fields:
+        - key: mssql_host
+          label: SQL Server 主机
+          kind: text
+          required: true
+          to: env
+          env: SERVER
+        - key: mssql_port
+          label: 端口
+          kind: number
+          default: "1433"
+          to: env
+          env: PORT
+        - key: mssql_user
+          label: 账号
+          kind: text
+          to: env
+          env: USERNAME
+        - key: mssql_password
+          label: 密码
+          kind: password
+          sensitive: true
+          to: env
+          env: PASSWORD

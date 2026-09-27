@@ -1,0 +1,28 @@
+# redis_exporter — Exporter 商店清单（单类型源文件）
+#
+# 格式与校验权威：平台仓库 backend/internal/console/registry/registry.go（TypeDef schema）。
+# 根 exporter-types.yaml 由 scripts/build.py 自动聚合生成，请勿手改根文件。
+# 上游实际配置核验记录：docs/upstream-verification.md。
+types:
+    - name: redis_exporter
+      label: Redis（市场）
+      configless: true
+      requires_devices: false
+      metrics_port: 9121
+      health_path: /
+      image: oliver006/redis_exporter:v1.66.0
+      listen_default: ""
+      device_port_default: 0
+      fields:
+        - key: redis_addr
+          label: Redis 地址
+          kind: text
+          default: redis://localhost:6379
+          to: env
+          env: REDIS_ADDR
+        - key: redis_password
+          label: Redis 密码
+          kind: password
+          sensitive: true
+          to: env
+          env: REDIS_PASSWORD

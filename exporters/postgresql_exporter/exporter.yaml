@@ -1,0 +1,25 @@
+# postgresql_exporter — Exporter 商店清单（单类型源文件）
+#
+# 格式与校验权威：平台仓库 backend/internal/console/registry/registry.go（TypeDef schema）。
+# 根 exporter-types.yaml 由 scripts/build.py 自动聚合生成，请勿手改根文件。
+# 上游实际配置核验记录：docs/upstream-verification.md。
+types:
+    - name: postgresql_exporter
+      label: PostgreSQL（市场）
+      preface: 数据库侧需建号并授予监控只读（pg_monitor 角色）。
+      configless: true
+      requires_devices: false
+      metrics_port: 9187
+      health_path: /
+      image: prometheuscommunity/postgres-exporter:v0.15.0
+      listen_default: ""
+      device_port_default: 0
+      fields:
+        - key: pg_datasource
+          label: 数据源 DSN
+          kind: password
+          required: true
+          sensitive: true
+          to: env
+          env: DATA_SOURCE_NAME
+          hint: postgresql://user:password@host:5432/database?sslmode=disable

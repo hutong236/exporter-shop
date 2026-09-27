@@ -1,0 +1,24 @@
+# kafka_exporter — Exporter 商店清单（单类型源文件）
+#
+# 格式与校验权威：平台仓库 backend/internal/console/registry/registry.go（TypeDef schema）。
+# 根 exporter-types.yaml 由 scripts/build.py 自动聚合生成，请勿手改根文件。
+# 上游实际配置核验记录：docs/upstream-verification.md。
+types:
+    - name: kafka_exporter
+      label: Kafka（市场）
+      configless: true
+      requires_devices: false
+      metrics_port: 9308
+      health_path: /
+      image: danielqsj/kafka-exporter:v1.9.0
+      args_template:
+        - --kafka.server={{.kafka_servers}}
+      listen_default: ""
+      device_port_default: 0
+      fields:
+        - key: kafka_servers
+          label: Kafka 地址
+          kind: text
+          default: localhost:9092
+          to: arg
+          hint: 单条 --kafka.server 注入（KAFKA_SERVERS 环境变量不被该镜像读取）；多 broker 场景需扩展本类型 args_template（--kafka.server 可重复传）

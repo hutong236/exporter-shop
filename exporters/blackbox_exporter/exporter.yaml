@@ -1,0 +1,43 @@
+# blackbox_exporter — Exporter 商店清单（单类型源文件）
+#
+# 格式与校验权威：平台仓库 backend/internal/console/registry/registry.go（TypeDef schema）。
+# 根 exporter-types.yaml 由 scripts/build.py 自动聚合生成，请勿手改根文件。
+# 上游实际配置核验记录：docs/upstream-verification.md。
+types:
+    - name: blackbox_exporter
+      label: Blackbox 探针（市场）
+      preface: 探针型：在「探测目标」中登记目标列表（实例级在线增删，只更新抓取配置，零 Pod 滚动）。探测自身 /metrics 抓取始终保留。
+      configless: false
+      requires_devices: false
+      metrics_port: 9115
+      health_path: /
+      image: quay.io/prometheus/blackbox-exporter:v0.25.0
+      args:
+        - --config.file=/etc/blackbox_exporter/config.yml
+      listen_default: ""
+      device_port_default: 0
+      config:
+        mode: raw
+        template: |
+            modules:
+              http_2xx:
+                prober: http
+                timeout: 5s
+                http:
+                  preferred_ip_protocol: ip4
+              icmp:
+                prober: icmp
+                timeout: 5s
+                icmp:
+                  preferred_ip_protocol: ip4
+              tcp_connect:
+                prober: tcp
+                timeout: 5s
+        mount_path: /etc/blackbox_exporter/config.yml
+      probe:
+        path: /probe
+        modules:
+            - http_2xx
+            - icmp
+            - tcp_connect
+        default_module: http_2xx

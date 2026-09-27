@@ -1,0 +1,141 @@
+# snmp_exporter — Exporter 商店清单（单类型源文件）
+#
+# 格式与校验权威：平台仓库 backend/internal/console/registry/registry.go（TypeDef schema）。
+# 根 exporter-types.yaml 由 scripts/build.py 自动聚合生成，请勿手改根文件。
+# 上游实际配置核验记录：docs/upstream-verification.md。
+types:
+    - name: snmp_exporter
+      label: SNMP 探针（市场）
+      preface: 探针型：目标列表实例级在线增删（零 Pod 滚动）。snmp.yml 含团体字等凭据，整文件以 Secret 挂载（ConfigMap 无凭据）；模块段为 generator 产物示例，深度定制经 exporter-types.yaml 覆盖。
+      configless: false
+      requires_devices: false
+      metrics_port: 9116
+      health_path: /
+      image: quay.io/prometheus/snmp-exporter:v0.26.0
+      args:
+        - --config.file=/etc/snmp_exporter/snmp.yml
+      listen_default: ""
+      device_port_default: 0
+      config:
+        mode: raw
+        template: |
+            modules:
+              if_mib:
+                walk:
+                  - 1.3.6.1.2.1.2.2.1.1
+                  - 1.3.6.1.2.1.2.2.1.2
+                  - 1.3.6.1.2.1.2.2.1.3
+                  - 1.3.6.1.2.1.2.2.1.5
+                  - 1.3.6.1.2.1.2.2.1.6
+                  - 1.3.6.1.2.1.2.2.1.7
+                  - 1.3.6.1.2.1.2.2.1.8
+                  - 1.3.6.1.2.1.2.2.1.10
+                  - 1.3.6.1.2.1.2.2.1.14
+                  - 1.3.6.1.2.1.2.2.1.16
+                metrics:
+                  - name: ifIndex
+                    oid: 1.3.6.1.2.1.2.2.1.1
+                    type: gauge
+                  - name: ifDescr
+                    oid: 1.3.6.1.2.1.2.2.1.2
+                    type: DisplayString
+                    indexes:
+                      - labelname: ifIndex
+                        type: gauge
+                  - name: ifType
+                    oid: 1.3.6.1.2.1.2.2.1.3
+                    type: gauge
+                    indexes:
+                      - labelname: ifIndex
+                        type: gauge
+                    lookups:
+                      - labels:
+                          - ifIndex
+                          - ifDescr
+                        labelname: ifDescr
+                        oid: 1.3.6.1.2.1.2.2.1.2
+                  - name: ifSpeed
+                    oid: 1.3.6.1.2.1.2.2.1.5
+                    type: gauge
+                    indexes:
+                      - labelname: ifIndex
+                        type: gauge
+                  - name: ifPhysAddress
+                    oid: 1.3.6.1.2.1.2.2.1.6
+                    type: PhysAddress48
+                    indexes:
+                      - labelname: ifIndex
+                        type: gauge
+                  - name: ifAdminStatus
+                    oid: 1.3.6.1.2.1.2.2.1.7
+                    type: EnumAsStateSet
+                    enum_values:
+                      1: up
+                      2: down
+                      3: testing
+                      4: unknown
+                      5: dormant
+                    indexes:
+                      - labelname: ifIndex
+                        type: gauge
+                  - name: ifOperStatus
+                    oid: 1.3.6.1.2.1.2.2.1.8
+                    type: EnumAsStateSet
+                    enum_values:
+                      1: up
+                      2: down
+                      3: testing
+                      4: unknown
+                      5: dormant
+                      6: notPresent
+                      7: lowerLayerDown
+                    indexes:
+                      - labelname: ifIndex
+                        type: gauge
+                  - name: ifInOctets
+                    oid: 1.3.6.1.2.1.2.2.1.10
+                    type: counter
+                    indexes:
+                      - labelname: ifIndex
+                        type: gauge
+                  - name: ifInErrors
+                    oid: 1.3.6.1.2.1.2.2.1.14
+                    type: counter
+                    indexes:
+                      - labelname: ifIndex
+                        type: gauge
+                  - name: ifOutOctets
+                    oid: 1.3.6.1.2.1.2.2.1.16
+                    type: counter
+                    indexes:
+                      - labelname: ifIndex
+                        type: gauge
+              sysuptime:
+                get:
+                  - 1.3.6.1.2.1.1.3.0
+                metrics:
+                  - name: sysUpTime
+                    oid: 1.3.6.1.2.1.1.3
+                    type: gauge
+                    help: The time (in hundredths of a second) since the network management portion of the system was last re-initialized.
+            auths:
+              public_v2:
+                community: {{ .snmp_community }}
+                version: 2
+        mount_path: /etc/snmp_exporter/snmp.yml
+        secret_mount: true
+      probe:
+        path: /snmp
+        modules:
+            - if_mib
+            - sysuptime
+        default_module: if_mib
+        auth: public_v2
+      fields:
+        - key: snmp_community
+          label: SNMP 团体字（community）
+          kind: password
+          required: true
+          sensitive: true
+          to: config
+          hint: 渲染进 snmp.yml auth 段，整文件以 Secret 挂载，任何 ConfigMap / 预览不出现明文

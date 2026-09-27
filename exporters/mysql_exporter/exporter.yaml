@@ -1,0 +1,41 @@
+# mysql_exporter — Exporter 商店清单（单类型源文件）
+#
+# 格式与校验权威：平台仓库 backend/internal/console/registry/registry.go（TypeDef schema）。
+# 根 exporter-types.yaml 由 scripts/build.py 自动聚合生成，请勿手改根文件。
+# 上游实际配置核验记录：docs/upstream-verification.md。
+types:
+    - name: mysql_exporter
+      label: MySQL（市场 · 多目标）
+      preface: 多目标连接型：账号/密码为本实例全部目标共享；监控目标（host:port）在 Targets 页统一管理，增删目标只更新抓取配置，修改密码会触发 Pod 滚动更新。上游 mysqld-exporter 已停止维护（多目标能力需 v0.15+）。数据库侧需 DBA 预先建号授权：GRANT PROCESS, REPLICATION CLIENT, SELECT ON *.* TO 'exporter'@'%'; 并设 MAX_USER_CONNECTIONS 3。平台只管 exporter，不管被监控的 MySQL 本身。注意：exporter 自身 /metrics 端点未绑定目标，其 mysql_up=0 为预期（各目标的 mysql_up 见 Targets 页 instance 维度）。
+      configless: false
+      requires_devices: false
+      metrics_port: 9104
+      health_path: /
+      image: quay.io/prometheus/mysqld-exporter:v0.15.1
+      args:
+        - --config.my-cnf=/etc/mysql_exporter/.my.cnf
+      listen_default: ""
+      device_port_default: 0
+      config:
+        mode: raw
+        template: |
+            [client]
+            user = {{ .Fields.mysql_user }}
+            password = {{ .mysql_password }}
+        mount_path: /etc/mysql_exporter/.my.cnf
+        secret_mount: true
+      target_mode: connection
+      fields:
+        - key: mysql_user
+          label: 数据库账号
+          kind: text
+          default: exporter
+          to: var
+          hint: 本实例全部监控目标共享的连接账号
+        - key: mysql_password
+          label: 数据库密码
+          kind: password
+          required: true
+          sensitive: true
+          to: config
+          hint: 只写不回显 · 加密存储 · 物化为 Secret（修改将触发滚动更新）
