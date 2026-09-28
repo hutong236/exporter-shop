@@ -9,12 +9,14 @@ on:
     paths:
       - "exporters/**"
       - "exporter-types.yaml"
+      - "docs/exporter-params.md"
       - "scripts/**"
       - ".github/workflows/manifest.yml"
   pull_request:
     paths:
       - "exporters/**"
       - "exporter-types.yaml"
+      - "docs/exporter-params.md"
       - "scripts/**"
       - ".github/workflows/manifest.yml"
 

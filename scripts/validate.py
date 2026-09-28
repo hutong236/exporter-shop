@@ -12,6 +12,7 @@
      - 每文件恰一个条目，条目 name 与目录名一致
      - 文件数 ≤64、合并总字节 ≤768KiB（gitstore.go 目录模式上限）
      - 根 exporter-types.yaml 与 scripts/build.py 聚合产物一致（防漂移）
+     - docs/exporter-params.md 与 scripts/docgen.py 生成产物一致（防漂移）
   B. 类型级不变量（registry.go 镜像，见各函数注释标注的对应行号语义）
      - name 正则 / metrics_port 必填 / target_mode·workload·config.mode 枚举
      - connection 互斥 probe 且须 raw+secret_mount+非空 template
@@ -248,6 +249,13 @@ def main() -> None:
     current = root.read_text() if root.exists() else ""
     if current != out:
         err("exporter-types.yaml 与 exporters/ 源目录不一致（漂移），请运行 python3 scripts/build.py")
+
+    # A5. 参数对比文档防漂移（与 docgen.py 生成产物一致）
+    import docgen  # noqa: E402  复用生成逻辑，保证与生成口径一致
+    params_doc = REPO / "docs" / "exporter-params.md"
+    doc_current = params_doc.read_text() if params_doc.exists() else ""
+    if doc_current != docgen.render():
+        err("docs/exporter-params.md 与 exporters/ 源目录不一致（漂移），请运行 python3 scripts/docgen.py")
 
     if errors:
         print(f"FAIL（{len(errors)} 处）：")

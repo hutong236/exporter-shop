@@ -17,8 +17,10 @@ exporter-shop/
 │   └── snmp_exporter/exporter.yaml
 ├── scripts/
 │   ├── build.py                   # 按字典序聚合 exporters/*/exporter.yaml → 根清单
+│   ├── docgen.py                  # 生成 docs/exporter-params.md（表单参数对比）
 │   └── validate.py                # 本地校验（镜像平台加载期不变量 + 防漂移）
 ├── docs/
+│   ├── exporter-params.md         # 各类型表单参数对比（docgen.py 生成，请勿手改）
 │   └── upstream-verification.md   # 各类型与上游实际配置的核验记录
 └── .github/workflows/manifest.yml # CI：校验 + 聚合防漂移
 ```
@@ -75,10 +77,10 @@ exporter-shop/
 ## 维护
 
 1. 修改对应类型的 `exporters/<name>/exporter.yaml`（或新增目录）；
-2. 本地执行 `python3 scripts/build.py` 重新生成根清单，`python3 scripts/validate.py` 校验；
+2. 本地执行 `python3 scripts/build.py` 与 `python3 scripts/docgen.py` 重新生成根清单和参数对比文档，`python3 scripts/validate.py` 校验；
 3. 提 PR（CI 会自动跑校验与防漂移检查）。
 
-- 字段说明与各类型逐字段清单另见平台仓库 `docs/exporter-config-inventory.md`；各类型镜像 tag / 端口 / 环境变量与上游实际配置的核验记录见 [docs/upstream-verification.md](./docs/upstream-verification.md)。
+- 字段说明与各类型逐字段清单另见平台仓库 `docs/exporter-config-inventory.md`；本仓库各类型表单参数对比（落点/上游入口/默认值）见 [docs/exporter-params.md](./docs/exporter-params.md)；各类型镜像 tag / 端口 / 环境变量与上游实际配置的核验记录见 [docs/upstream-verification.md](./docs/upstream-verification.md)。
 - 平台侧无需重启：下一次定时拉取或手动「立即拉取」即生效；回滚即 revert 本仓库。
 - 新增类型建议同时更新本 README 的目录表。
 
