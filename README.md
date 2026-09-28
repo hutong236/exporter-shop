@@ -41,7 +41,7 @@ exporter-shop/
 
 保存后点击「立即拉取」，状态应为 `ok`；拉取失败或清单非法时平台保留上一次成功清单（last-good），不影响已上线 exporter。
 
-## 当前目录（16 个市场类）
+## 当前目录（14 个市场类）
 
 | 类型 key | 显示名 | 指标端口 | 说明 |
 | --- | --- | --- | --- |
@@ -54,10 +54,8 @@ exporter-shop/
 | `elasticsearch_exporter` | Elasticsearch | 9114 | |
 | `mssql_exporter` | SQL Server | 4000 | |
 | `kafka_exporter` | Kafka | 9308 | 地址经 `--kafka.server` 参数注入（env 不生效） |
-| `rabbitmq_exporter` | RabbitMQ 3.x | 9419 | 上游已归档 |
 | `memcached_exporter` | Memcached | 9150 | |
 | `nginx_exporter` | NGINX | 9113 | |
-| `haproxy_exporter` | HAProxy 1.x | 9101 | 上游已归档 |
 | `apache_exporter` | Apache | 9117 | |
 | `blackbox_exporter` | Blackbox 探针 | 9115 | 探针型（HTTP/TCP/ICMP 等探测） |
 | `snmp_exporter` | SNMP 探针 | 9116 | 探针型（网络设备） |

@@ -154,26 +154,6 @@ types:
           to: arg
           advanced: true
 
-    - name: haproxy_exporter
-      label: HAProxy 1.x（市场 · 已归档）
-      preface: 前置：HAProxy stats endpoint（HTTP 或 unix socket）。官方已归档（2023-03）：纳入为照顾 1.x 存量；HAProxy ≥2.0 建议编译 USE_PROMEX 原生 /metrics（后续登记）。
-      configless: true
-      requires_devices: false
-      metrics_port: 9101
-      health_path: /
-      image: quay.io/prometheus/haproxy-exporter:v0.15.0
-      args_template:
-        - --haproxy.scrape-uri={{.haproxy_scrape_uri}}
-      listen_default: ""
-      device_port_default: 0
-      fields:
-        - key: haproxy_scrape_uri
-          label: stats 地址
-          kind: text
-          default: http://localhost/haproxy?;csv
-          to: arg
-          hint: 必须带 ;csv 后缀（路径形态对齐官方 README 示例；按实际 stats 前端填写）
-
     - name: kafka_exporter
       label: Kafka（市场）
       configless: true
@@ -394,36 +374,6 @@ types:
           to: env
           env: DATA_SOURCE_NAME
           hint: postgresql://user:password@host:5432/database?sslmode=disable
-
-    - name: rabbitmq_exporter
-      label: RabbitMQ 3.x（市场 · 已归档）
-      preface: 前置：启用 management 插件，并创建带 monitoring 标签的用户。项目已归档，仅支持 RabbitMQ 3.x；4+ 请用原生 rabbitmq_prometheus 插件（后续阶段登记）。
-      configless: true
-      requires_devices: false
-      metrics_port: 9419
-      health_path: /
-      image: kbudde/rabbitmq-exporter:1.0.0
-      listen_default: ""
-      device_port_default: 0
-      fields:
-        - key: rabbit_url
-          label: 管理接口地址
-          kind: text
-          default: http://127.0.0.1:15672
-          to: env
-          env: RABBIT_URL
-        - key: rabbit_user
-          label: 管理用户
-          kind: text
-          default: guest
-          to: env
-          env: RABBIT_USER
-        - key: rabbit_password
-          label: 密码
-          kind: password
-          sensitive: true
-          to: env
-          env: RABBIT_PASSWORD
 
     - name: redis_exporter
       label: Redis（市场）
