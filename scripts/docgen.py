@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """生成 docs/exporter-params.md：商店各类型 exporter 的表单参数对比文档。
 
-- 源：exporters/<name>/exporter.yaml（唯一维护入口），按字典序读取，与 build.py 聚合口径一致。
+- 源：exporters/<name>/exporter.yaml（唯一维护入口），按字典序读取（与平台目录模式合并顺序一致）。
 - 输出：docs/exporter-params.md 为生成产物，请勿手改；validate.py 对本文件做防漂移检查。
 - 分区：总览 → 非敏感参数注入对比 → 敏感字段（凭据）注入对比 → 逐类型明细
   （固定 args / args_template / 配置通道 / 探针声明 / 表单字段表）。
@@ -295,7 +295,7 @@ def render() -> str:
         "> ⚠️ 本文件由 `scripts/docgen.py` 从 `exporters/*/exporter.yaml` 自动生成，请勿手改。",
         "> 修改请编辑对应类型的源清单后执行 `python3 scripts/docgen.py` 重新生成。",
         "",
-        f"- 覆盖 {len(types)} 个类型 / {total} 个表单字段（敏感字段 {secrets} 个），按字典序排列（与 `scripts/build.py` 聚合口径一致）",
+        f"- 覆盖 {len(types)} 个类型 / {total} 个表单字段（敏感字段 {secrets} 个），按字典序排列（与平台目录模式合并顺序一致）",
         "- 落点（`to`）语义：`env` = 环境变量；`arg` = 经 `args_template` 注入命令行；`var`/`config` = 渲染进 `config.template`（`config` 仅供敏感凭据，配套 `secret_mount` 物化为 Secret）",
         "- 控件为 `password` 的即敏感字段（`sensitive`，二者双向绑定）：只写不回显，落点仅允许 `env`/`config`，禁止进 args",
         "- 字段取值与上游行为（镜像 tag / 端口 / 环境变量 / flag 写法）的核验依据见 [upstream-verification.md](./upstream-verification.md)",

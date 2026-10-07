@@ -11,7 +11,6 @@
        （平台目录模式会把目录内全部 yaml 当清单拉取合并）
      - 每文件恰一个条目，条目 name 与目录名一致
      - 文件数 ≤64、合并总字节 ≤768KiB（gitstore.go 目录模式上限）
-     - 根 exporter-types.yaml 与 scripts/build.py 聚合产物一致（防漂移）
      - docs/exporter-params.md 与 scripts/docgen.py 生成产物一致（防漂移）
   B. 类型级不变量（registry.go 镜像，见各函数注释标注的对应行号语义）
      - name 正则 / metrics_port 必填 / target_mode·workload·config.mode 枚举
@@ -241,16 +240,8 @@ def main() -> None:
     if total > MAX_TOTAL_BYTES:
         err(f"合并总字节 {total} 超过平台目录模式上限 {MAX_TOTAL_BYTES}")
 
-    # A4. 根清单防漂移（与 build.py 聚合产物逐字节一致）
+    # A4. 参数对比文档防漂移（与 docgen.py 生成产物一致）
     sys.path.insert(0, str(REPO / "scripts"))
-    import build  # noqa: E402  复用聚合逻辑，保证与生成口径一致
-    out, count = build.collect()
-    root = REPO / "exporter-types.yaml"
-    current = root.read_text() if root.exists() else ""
-    if current != out:
-        err("exporter-types.yaml 与 exporters/ 源目录不一致（漂移），请运行 python3 scripts/build.py")
-
-    # A5. 参数对比文档防漂移（与 docgen.py 生成产物一致）
     import docgen  # noqa: E402  复用生成逻辑，保证与生成口径一致
     params_doc = REPO / "docs" / "exporter-params.md"
     doc_current = params_doc.read_text() if params_doc.exists() else ""
@@ -262,7 +253,7 @@ def main() -> None:
         for e in errors:
             print(f"  - {e}")
         sys.exit(1)
-    print(f"OK：{len(types)} 个类型全部通过校验；根清单与源目录一致（聚合 {count} 条目，{total} 字节）")
+    print(f"OK：{len(types)} 个类型全部通过校验；源清单合并 {total} 字节（目录模式上限 {MAX_TOTAL_BYTES}）")
 
 
 if __name__ == "__main__":

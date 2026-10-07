@@ -3,7 +3,7 @@
 > ⚠️ 本文件由 `scripts/docgen.py` 从 `exporters/*/exporter.yaml` 自动生成，请勿手改。
 > 修改请编辑对应类型的源清单后执行 `python3 scripts/docgen.py` 重新生成。
 
-- 覆盖 14 个类型 / 26 个表单字段（敏感字段 9 个），按字典序排列（与 `scripts/build.py` 聚合口径一致）
+- 覆盖 14 个类型 / 26 个表单字段（敏感字段 9 个），按字典序排列（与平台目录模式合并顺序一致）
 - 落点（`to`）语义：`env` = 环境变量；`arg` = 经 `args_template` 注入命令行；`var`/`config` = 渲染进 `config.template`（`config` 仅供敏感凭据，配套 `secret_mount` 物化为 Secret）
 - 控件为 `password` 的即敏感字段（`sensitive`，二者双向绑定）：只写不回显，落点仅允许 `env`/`config`，禁止进 args
 - 字段取值与上游行为（镜像 tag / 端口 / 环境变量 / flag 写法）的核验依据见 [upstream-verification.md](./upstream-verification.md)
@@ -324,7 +324,7 @@ password = {{ .mysql_password }}
 
 - 镜像 `quay.io/prometheus/snmp-exporter:v0.26.0` ｜ 指标端口 `9116` ｜ 目标模式 probe（探针） ｜ 工作负载 deployment（缺省）
 
-> 探针型：目标列表实例级在线增删（零 Pod 滚动）。snmp.yml 含团体字等凭据，整文件以 Secret 挂载（ConfigMap 无凭据）；模块段为 generator 产物示例，深度定制经 exporter-types.yaml 覆盖。
+> 探针型：目标列表实例级在线增删（零 Pod 滚动）。snmp.yml 含团体字等凭据，整文件以 Secret 挂载（ConfigMap 无凭据）；模块段为 generator 产物示例，深度定制经商店源清单覆盖。
 
 固定 `args`：
 

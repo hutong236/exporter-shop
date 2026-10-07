@@ -1,21 +1,19 @@
 name: manifest
 
 # Exporter 商店清单校验：平台语义为"任一条目非法即整份拒绝"，
-# 在 CI 提前拦截同类错误，并防止根聚合文件与 exporters/ 源目录漂移。
+# 在 CI 提前拦截同类错误，并防止生成文档与 exporters/ 源目录漂移。
 
 on:
   push:
     branches: [main]
     paths:
       - "exporters/**"
-      - "exporter-types.yaml"
       - "docs/exporter-params.md"
       - "scripts/**"
       - ".github/workflows/manifest.yml"
   pull_request:
     paths:
       - "exporters/**"
-      - "exporter-types.yaml"
       - "docs/exporter-params.md"
       - "scripts/**"
       - ".github/workflows/manifest.yml"

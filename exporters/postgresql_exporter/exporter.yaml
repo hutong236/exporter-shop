@@ -1,7 +1,7 @@
 # postgresql_exporter — Exporter 商店清单（单类型源文件）
 #
 # 格式与校验权威：平台仓库 backend/internal/console/registry/registry.go（TypeDef schema）。
-# 根 exporter-types.yaml 由 scripts/build.py 自动聚合生成，请勿手改根文件。
+# 平台经目录模式拉取本目录（Trees API 字典序逐文件合并），勿在此目录放置其他 yaml/yml 文件。
 # 上游实际配置核验记录：docs/upstream-verification.md。
 types:
     - name: postgresql_exporter

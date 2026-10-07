@@ -10,19 +10,17 @@
 
 ```
 exporter-shop/
-├── exporter-types.yaml            # 聚合产物（scripts/build.py 生成，请勿手改）
 ├── exporters/
 │   ├── node_exporter/exporter.yaml
 │   ├── …（一类一目录）
 │   └── snmp_exporter/exporter.yaml
 ├── scripts/
-│   ├── build.py                   # 按字典序聚合 exporters/*/exporter.yaml → 根清单
 │   ├── docgen.py                  # 生成 docs/exporter-params.md（表单参数对比）
 │   └── validate.py                # 本地校验（镜像平台加载期不变量 + 防漂移）
 ├── docs/
 │   ├── exporter-params.md         # 各类型表单参数对比（docgen.py 生成，请勿手改）
 │   └── upstream-verification.md   # 各类型与上游实际配置的核验记录
-└── .github/workflows/manifest.yml # CI：校验 + 聚合防漂移
+└── .github/workflows/manifest.yml # CI：校验 + 文档防漂移
 ```
 
 注意：`exporters/` 下每类只放一个 `exporter.yaml` —— 平台目录模式会把目录内**全部** `.yaml/.yml` 当清单拉取合并；补充说明写进 `.md` 或 yaml 注释。
@@ -31,15 +29,15 @@ exporter-shop/
 
 平台控制台 → **设置** → 商店来源切换为 **Git**，填写：
 
-| 配置项 | 目录模式（推荐） | 单文件模式（存量兼容） |
-| --- | --- | --- |
-| 仓库地址（gitUrl） | `https://github.com/hutong236/exporter-shop` | 同左 |
-| 分支 | `main` | `main` |
-| 文件路径 | `exporters` | `exporter-types.yaml` |
-| 拉取间隔 | 缺省 10 分钟，可调 | 同左 |
+| 配置项 | 目录模式 |
+| --- | --- |
+| 仓库地址（gitUrl） | `https://github.com/hutong236/exporter-shop` |
+| 分支 | `main` |
+| 文件路径 | `exporters` |
+| 拉取间隔 | 缺省 10 分钟，可调 |
 
 - **目录模式**：文件路径填目录 `exporters`（不以 `.yaml/.yml` 结尾即目录语义）。平台经 GitHub Trees API 按字典序逐文件拉取合并，限制：文件数 ≤64、合并总字节 ≤768KiB、跨文件同名类型整体拒绝。
-- **单文件模式**：文件路径填根 `exporter-types.yaml`。该文件为脚本聚合产物，与目录模式内容等价（同为字典序合并）。
+- 原根聚合单文件 `exporter-types.yaml` 已移除，接入统一走目录模式（聚合产物与目录模式本就逐字节等价，同为字典序合并）。
 
 保存后点击「立即拉取」，状态应为 `ok`；拉取失败或清单非法时平台保留上一次成功清单（last-good），不影响已上线 exporter。
 
@@ -77,8 +75,8 @@ exporter-shop/
 ## 维护
 
 1. 修改对应类型的 `exporters/<name>/exporter.yaml`（或新增目录）；
-2. 本地执行 `python3 scripts/build.py` 与 `python3 scripts/docgen.py` 重新生成根清单和参数对比文档，`python3 scripts/validate.py` 校验；
-3. 提 PR（CI 会自动跑校验与防漂移检查）。
+2. 本地执行 `python3 scripts/docgen.py` 重新生成参数对比文档，`python3 scripts/validate.py` 校验；
+3. 提 PR（CI 会自动跑校验与文档防漂移检查）。
 
 - 字段说明与各类型逐字段清单另见平台仓库 `docs/exporter-config-inventory.md`；本仓库各类型表单参数对比（落点/上游入口/默认值）见 [docs/exporter-params.md](./docs/exporter-params.md)；各类型镜像 tag / 端口 / 环境变量与上游实际配置的核验记录见 [docs/upstream-verification.md](./docs/upstream-verification.md)。
 - 平台侧无需重启：下一次定时拉取或手动「立即拉取」即生效；回滚即 revert 本仓库。
