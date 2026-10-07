@@ -116,11 +116,23 @@ modules:
   tcp_connect:
     prober: tcp
     timeout: 5s
+  dns_lookup:
+    prober: dns
+    timeout: 5s
+    dns:
+      query_name: www.prometheus.io
+      query_type: A
+      valid_rcodes:
+        - NOERROR
+      validate_answer_rrs:
+        fail_if_none_matches_regexp:
+          - ".+"
+      preferred_ip_protocol: ip4
 ```
 
 </details>
 
-探针声明：端点 `/probe` ｜ 模块 `http_2xx` / `icmp` / `tcp_connect` ｜ 默认 `http_2xx`
+探针声明：端点 `/probe` ｜ 模块 `http_2xx` / `icmp` / `tcp_connect` / `dns_lookup` ｜ 默认 `http_2xx`
 
 （无表单字段）
 

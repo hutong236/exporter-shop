@@ -57,7 +57,7 @@ exporter-shop/
 | `memcached_exporter` | Memcached | 9150 | |
 | `nginx_exporter` | NGINX | 9113 | |
 | `apache_exporter` | Apache | 9117 | |
-| `blackbox_exporter` | Blackbox 探针 | 9115 | 探针型（HTTP/TCP/ICMP 等探测） |
+| `blackbox_exporter` | Blackbox 探针 | 9115 | 探针型（HTTP/TCP/ICMP/DNS 等探测） |
 | `snmp_exporter` | SNMP 探针 | 9116 | 探针型（网络设备） |
 
 ## 清单格式

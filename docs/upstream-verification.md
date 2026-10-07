@@ -125,6 +125,7 @@
 - 默认端口 9115、`--config.file` flag、`/probe` 端点全部正确（[README@v0.25.0](https://raw.githubusercontent.com/prometheus/blackbox_exporter/v0.25.0/README.md)）
 - config.yml 模板的 `modules/prober/timeout/preferred_ip_protocol` 结构在 v0.25.0 全部合法，三个模块与上游自带 blackbox.yml 同构（[config/config.go@v0.25.0](https://raw.githubusercontent.com/prometheus/blackbox_exporter/v0.25.0/config/config.go)、[blackbox.yml@v0.25.0](https://raw.githubusercontent.com/prometheus/blackbox_exporter/v0.25.0/blackbox.yml)）
 - 提示：icmp 模块需容器具备 `CAP_NET_RAW`（README 有说明，属部署层事项）
+- **2026-10-07 增补**：config 模板与 `probe.modules` 新增 `dns_lookup` 模块（DNS A 记录解析检查）。字段集 `prober: dns / query_name / query_type / valid_rcodes / validate_answer_rrs.fail_if_none_matches_regexp / preferred_ip_protocol` 均为 v0.25.0 合法结构（[example.yml@v0.25.0](https://raw.githubusercontent.com/prometheus/blackbox_exporter/v0.25.0/example.yml)、[prober/dns.go@v0.25.0](https://raw.githubusercontent.com/prometheus/blackbox_exporter/v0.25.0/prober/dns.go)）：探测目标填 DNS 服务器地址，不带端口默认 53，传输协议缺省 udp；`query_type` 显式置 `A`（缺省 ANY，公共递归普遍拒绝应答）；`fail_if_none_matches_regexp: [".+"]` = 应答区至少存在一条记录才算解析成功（防 NODATA 空应答误判为成功）
 
 ### snmp_exporter ❌→已修正（模板 type 非法）
 
