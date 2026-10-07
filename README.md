@@ -41,7 +41,7 @@ exporter-shop/
 
 保存后点击「立即拉取」，状态应为 `ok`；拉取失败或清单非法时平台保留上一次成功清单（last-good），不影响已上线 exporter。
 
-## 当前目录（14 个市场类）
+## 当前目录（13 个市场类）
 
 | 类型 key | 显示名 | 指标端口 | 说明 |
 | --- | --- | --- | --- |
@@ -50,7 +50,6 @@ exporter-shop/
 | `postgresql_exporter` | PostgreSQL | 9187 | |
 | `mongodb_exporter` | MongoDB | 9216 | |
 | `redis_exporter` | Redis | 9121 | |
-| `clickhouse_exporter` | ClickHouse | 9116 | 上游已迁移 ClickHouse/clickhouse_exporter；镜像仅 `latest`（2021 构建） |
 | `elasticsearch_exporter` | Elasticsearch | 9114 | |
 | `mssql_exporter` | SQL Server | 4000 | |
 | `kafka_exporter` | Kafka | 9308 | 地址经 `--kafka.server` 参数注入（env 不生效） |

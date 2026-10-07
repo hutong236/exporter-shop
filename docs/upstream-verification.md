@@ -6,6 +6,7 @@
 - 核验维度：① 镜像 tag 存在性 ② `metrics_port` = 该版本默认监听端口 ③ `to: env` 变量名被该版本真实读取 ④ args / args_template flag 写法与字段默认值
 - 本报告发现的全部不符项已在同日修正（见文末「修正记录」）；核验后状态：16/16 与上游实际配置一致
 - **2026-09-28 移除**：rabbitmq_exporter 与 haproxy_exporter 因上游仓库归档已从商店目录删除（README 目录表同步为 14 类）；本文对应小节与汇总行保留为历史核验记录，不再对应现行目录
+- **2026-10-07 移除**：clickhouse_exporter 已从商店目录删除——上游 [ClickHouse/clickhouse_exporter](https://github.com/ClickHouse/clickhouse_exporter) README 明言「Exporter could used only for old ClickHouse versions, modern versions have embedded prometheus endpoint」，新版 ClickHouse 直接用内建 Prometheus /metrics 端点，独立 exporter 仅适用老版本（README 目录表同步为 13 类）；本文对应小节与汇总行保留为历史核验记录，不再对应现行目录
 
 ## 汇总
 
@@ -156,7 +157,7 @@
 未修正的遗留建议（供后续决策）：
 
 - node_exporter 可选补 `--path.rootfs` + `/ → /host/root` 挂载（filesystem/os_release collector 主机视图准确性）；属功能增强，未纳入本次最小变更。
-- clickhouse_exporter 镜像 2021 年后未更新、上游已迁移，长期建议评估替换（新版 ClickHouse 内建 /metrics 端点）。
+- ~~clickhouse_exporter 镜像 2021 年后未更新、上游已迁移，长期建议评估替换（新版 ClickHouse 内建 /metrics 端点）。~~ 已于 2026-10-07 从商店目录移除（新版 ClickHouse 内建 /metrics）。
 - kafka_exporter 多 broker 地址需扩展该类型 args_template（平台字段插值单条承载单地址）。
 
 ## 多目标属性（target_mode）核验（2026-09-27 第二轮）

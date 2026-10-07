@@ -3,7 +3,7 @@
 > ⚠️ 本文件由 `scripts/docgen.py` 从 `exporters/*/exporter.yaml` 自动生成，请勿手改。
 > 修改请编辑对应类型的源清单后执行 `python3 scripts/docgen.py` 重新生成。
 
-- 覆盖 14 个类型 / 26 个表单字段（敏感字段 9 个），按字典序排列（与平台目录模式合并顺序一致）
+- 覆盖 13 个类型 / 23 个表单字段（敏感字段 8 个），按字典序排列（与平台目录模式合并顺序一致）
 - 落点（`to`）语义：`env` = 环境变量；`arg` = 经 `args_template` 注入命令行；`var`/`config` = 渲染进 `config.template`（`config` 仅供敏感凭据，配套 `secret_mount` 物化为 Secret）
 - 控件为 `password` 的即敏感字段（`sensitive`，二者双向绑定）：只写不回显，落点仅允许 `env`/`config`，禁止进 args
 - 字段取值与上游行为（镜像 tag / 端口 / 环境变量 / flag 写法）的核验依据见 [upstream-verification.md](./upstream-verification.md)
@@ -14,7 +14,6 @@
 | --- | --- | --- | --- | --- | --- | --- |
 | `apache_exporter` | Apache（市场） | `quay.io/lusitaniae/apache-exporter:v1.1.0` | 9117 | single（单目标） | args_template | 1 |
 | `blackbox_exporter` | Blackbox 探针（市场） | `quay.io/prometheus/blackbox-exporter:v0.25.0` | 9115 | probe（探针） | 固定 args + config 模板 | 0 |
-| `clickhouse_exporter` | ClickHouse（市场） | `f1yegor/clickhouse-exporter:latest` | 9116 | single（单目标） | args_template + env | 3 |
 | `elasticsearch_exporter` | Elasticsearch（市场） | `quay.io/prometheuscommunity/elasticsearch-exporter:v1.9.0` | 9114 | single（单目标） | args_template + env | 5 |
 | `kafka_exporter` | Kafka（市场） | `danielqsj/kafka-exporter:v1.9.0` | 9308 | single（单目标） | args_template | 1 |
 | `memcached_exporter` | Memcached（市场） | `quay.io/prometheus/memcached-exporter:v0.15.1` | 9150 | single（单目标） | args_template | 1 |
@@ -34,8 +33,6 @@
 | 类型 | 字段 | 显示名 | 控件 | 默认值 | 落点 | 上游入口 |
 | --- | --- | --- | --- | --- | --- | --- |
 | `apache_exporter` | `apache_scrape_uri` | server-status 地址 | text | `http://localhost/server-status?auto` | arg（args_template） | 参数 `--scrape_uri={{.apache_scrape_uri}}` |
-| `clickhouse_exporter` | `clickhouse_url` | ClickHouse 地址 | text | `http://localhost:8123/` | arg（args_template） | 参数 `-scrape_uri={{.clickhouse_url}}` |
-| `clickhouse_exporter` | `clickhouse_user` | 账号 | text | — | env `CLICKHOUSE_USER` | 环境变量 `CLICKHOUSE_USER` |
 | `elasticsearch_exporter` | `es_uri` | 集群地址 | text | `http://elasticsearch:9200` | arg（args_template） | 参数 `--es.uri={{.es_uri}}` |
 | `elasticsearch_exporter` | `es_username` | 账号 | text | — | env `ES_USERNAME` | 环境变量 `ES_USERNAME` |
 | `elasticsearch_exporter` | `es_ssl_skip_verify` | 跳过 TLS 校验 | select（false / true） | `false` | arg（args_template） | 参数 `{{ if eq .es_ssl_skip_verify "true" }}--es.ssl-skip-verify{{ end }}` |
@@ -55,7 +52,6 @@
 
 | 类型 | 字段 | 显示名 | 必填 | 落点 | 上游入口 |
 | --- | --- | --- | --- | --- | --- |
-| `clickhouse_exporter` | `clickhouse_password` | 密码 | — | env `CLICKHOUSE_PASSWORD` | 环境变量 `CLICKHOUSE_PASSWORD` |
 | `elasticsearch_exporter` | `es_password` | 密码 | — | env `ES_PASSWORD` | 环境变量 `ES_PASSWORD` |
 | `elasticsearch_exporter` | `es_api_key` | API Key（可选） | — | env `ES_API_KEY` | 环境变量 `ES_API_KEY` |
 | `mongodb_exporter` | `mongodb_password` | 密码 | — | env `MONGODB_PASSWORD` | 环境变量 `MONGODB_PASSWORD` |
@@ -135,26 +131,6 @@ modules:
 探针声明：端点 `/probe` ｜ 模块 `http_2xx` / `icmp` / `tcp_connect` / `dns_lookup` ｜ 默认 `http_2xx`
 
 （无表单字段）
-
-### clickhouse_exporter — ClickHouse（市场）
-
-- 镜像 `f1yegor/clickhouse-exporter:latest` ｜ 指标端口 `9116` ｜ 目标模式 single（单目标） ｜ 工作负载 deployment（缺省）
-
-> 上游仓库已迁移至 ClickHouse/clickhouse_exporter（f1yegor 原仓库已删除）；镜像仓库仅 latest 一个 tag（2021 年构建），地址经 -scrape_uri 参数注入（CLICKHOUSE_URL 环境变量不被读取），凭据走 CLICKHOUSE_USER/CLICKHOUSE_PASSWORD 环境变量。新版 ClickHouse 建议优先使用其内建 /metrics 端点。
-
-`args_template`（`{{ … }}` 为表单字段插值）：
-
-```text
--scrape_uri={{.clickhouse_url}}
-```
-
-表单字段：
-
-| 字段 | 显示名 | 控件 | 必填 | 默认值 | 落点 | 说明 |
-| --- | --- | --- | --- | --- | --- | --- |
-| `clickhouse_url` | ClickHouse 地址 | text | — | `http://localhost:8123/` | arg（args_template） | — |
-| `clickhouse_user` | 账号 | text | — | — | env `CLICKHOUSE_USER` | — |
-| `clickhouse_password` | 密码 | password（敏感） | — | — | env `CLICKHOUSE_PASSWORD` | — |
 
 ### elasticsearch_exporter — Elasticsearch（市场）
 
