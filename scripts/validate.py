@@ -17,6 +17,7 @@
      - connection 互斥 probe 且须 raw+secret_mount+非空 template
      - sensitive ⇔ password；敏感落点仅 env|config；to:config 须 raw+secret_mount
      - probe 声明约束（path/modules/default_module/max_targets/auth）
+     - endpoint 型校验矩阵（REQ-181：禁止键/归一锚定）+ target_contract 声明校验
      - scrape duration / resources quantity 格式
      - args_template 引用字段须已声明、非敏感、非 env 落点
 
@@ -35,7 +36,8 @@ SRC_DIR = REPO / "exporters"
 MAX_FILES = 64                # gitstore.go MaxTypesFiles
 MAX_TOTAL_BYTES = 768 * 1024  # gitstore.go MaxTotalTypesBytes
 
-NAME_RE = re.compile(r"^[a-z][a-z0-9_]*$")
+# nameRE（registry.go REQ-181 放宽口径）：允许中划线，收尾禁连字符
+NAME_RE = re.compile(r"^[a-z](?:[a-z0-9_-]*[a-z0-9_])?$")
 QUANTITY_RE = re.compile(r"^[+-]?[0-9]+(\.[0-9]+)?([eE][+-]?[0-9]+)?(m|K|M|G|T|P|E|Ki|Mi|Gi|Ti|Pi|Ei)?$")
 DURATION_RE = re.compile(r"^([0-9]+(\.[0-9]+)?(ns|us|µs|ms|s|m|h))+$")
 TMPL_FIELD_RE = re.compile(r"\.([A-Za-z_][A-Za-z0-9_]*)")
@@ -43,8 +45,10 @@ TMPL_FIELD_RE = re.compile(r"\.([A-Za-z_][A-Za-z0-9_]*)")
 KINDS = {"text", "number", "password", "select"}
 TOS = {"env", "arg", "var", "config"}
 MODES = {"", "hutong", "raw", "none"}
-WORKLOADS = {"", "deployment", "daemonset"}
-TARGET_MODES = {"", "probe", "connection"}
+WORKLOADS = {"", "deployment", "daemonset", "none"}
+TARGET_MODES = {"", "probe", "connection", "endpoint"}
+CONTRACT_MODES = {"probe", "connection", "endpoint"}  # TargetContract.Mode 枚举
+SCHEMES = {"", "http", "https"}  # 仅 endpoint 型契约合法（REQ-181 M1）
 
 errors: list[str] = []
 
@@ -81,7 +85,7 @@ def validate_type(t: dict) -> None:
         err(f"存在空 name 条目")
         return
     if not NAME_RE.match(t["name"]):
-        err(f"类型 {name} name 非法（须 ^[a-z][a-z0-9_]*$）")
+        err(f"类型 {name} name 非法（须 ^[a-z](?:[a-z0-9_-]*[a-z0-9_])?$，允许中划线、收尾禁连字符）")
     port = t.get("metrics_port", 0)
     if not isinstance(port, int) or not (1 <= port <= 65535):
         err(f"类型 {name} 缺少/非法 metrics_port: {port!r}")
@@ -89,7 +93,7 @@ def validate_type(t: dict) -> None:
     # target_mode 枚举 + connection 约束
     tm = t.get("target_mode", "")
     if tm not in TARGET_MODES:
-        err(f"类型 {name} target_mode 非法: {tm!r}（须为空|probe|connection）")
+        err(f"类型 {name} target_mode 非法: {tm!r}（须为空|probe|connection|endpoint）")
     cfg = t.get("config") or {}
     mode = cfg.get("mode", "")
     if tm == "connection":
@@ -100,10 +104,50 @@ def validate_type(t: dict) -> None:
         if not cfg.get("template"):
             err(f"类型 {name} target_mode=connection 缺少 config.template")
 
+    # endpoint 型校验矩阵（registry.go validateEndpointType，REQ-181，对原始声明校验）
+    if tm == "endpoint":
+        if t.get("workload", "") not in ("", "none"):
+            err(f"类型 {name} endpoint 型不允许声明 workload")
+        if t.get("image"):
+            err(f"类型 {name} endpoint 型不允许声明 image（免部署采集器）")
+        if t.get("fields"):
+            err(f"类型 {name} endpoint 型不支持 fields（无认证直抓，认证字段属后续版本）")
+        if t.get("config") is not None:
+            err(f"类型 {name} endpoint 型必须 configless（不允许声明 config）")
+        if t.get("requires_devices") is not None:
+            err(f"类型 {name} endpoint 型不允许声明 requires_devices")
+        # metrics_port 必填且 1..65535 已由上方通用检查覆盖
+        if t.get("probe"):
+            err(f"类型 {name} endpoint 型与 probe 声明互斥")
+        c_ep = t.get("target_contract")
+        if c_ep and c_ep.get("mode", "") != "endpoint":
+            err(f"类型 {name} target_mode=endpoint 与 target_contract.mode={c_ep.get('mode')!r} 互斥")
+        if t.get("target_health_metric"):
+            err(f"类型 {name} endpoint 型不支持 target_health_metric（直抓目标 up 即真实状态）")
+
+    # target_contract 声明校验（registry.go validateTargetContract + 与 target_mode 一致性）
+    contract = t.get("target_contract")
+    if contract:
+        cm = contract.get("mode", "")
+        if cm not in CONTRACT_MODES:
+            err(f"类型 {name} target_contract.mode 非法: {cm!r}（须为 probe|connection|endpoint）")
+        cpath = contract.get("path", "")
+        if cpath and (not cpath.startswith("/") or re.search(r"\s", cpath)):
+            err(f"类型 {name} target_contract.path 非法: {cpath!r}（须以 / 开头且不含空白）")
+        sch = contract.get("scheme", "")
+        if sch not in SCHEMES:
+            err(f"类型 {name} target_contract.scheme 非法: {sch!r}（须为 http|https）")
+        elif cm != "endpoint":
+            err(f"类型 {name} target_contract.scheme 仅直连型（endpoint）契约可声明")
+        if tm and cm and tm != cm:
+            err(f"类型 {name} target_mode={tm!r} 与 target_contract.mode={cm!r} 冲突")
+
     # workload
     wl = t.get("workload", "")
     if wl not in WORKLOADS:
-        err(f"类型 {name} workload 非法: {wl!r}")
+        err(f"类型 {name} workload 非法: {wl!r}（须为空|deployment|daemonset|none）")
+    if wl == "none" and tm != "endpoint":
+        err(f"类型 {name} workload=none 仅直连型（target_mode=endpoint）可用")
     if wl == "daemonset" and t.get("replicas", 0):
         err(f"类型 {name} daemonset 不支持 replicas")
 

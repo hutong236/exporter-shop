@@ -3,7 +3,7 @@
 > ⚠️ 本文件由 `scripts/docgen.py` 从 `exporters/*/exporter.yaml` 自动生成，请勿手改。
 > 修改请编辑对应类型的源清单后执行 `python3 scripts/docgen.py` 重新生成。
 
-- 覆盖 13 个类型 / 23 个表单字段（敏感字段 8 个），按字典序排列（与平台目录模式合并顺序一致）
+- 覆盖 14 个类型 / 23 个表单字段（敏感字段 8 个），按字典序排列（与平台目录模式合并顺序一致）
 - 落点（`to`）语义：`env` = 环境变量；`arg` = 经 `args_template` 注入命令行；`var`/`config` = 渲染进 `config.template`（`config` 仅供敏感凭据，配套 `secret_mount` 物化为 Secret）
 - 控件为 `password` 的即敏感字段（`sensitive`，二者双向绑定）：只写不回显，落点仅允许 `env`/`config`，禁止进 args
 - 字段取值与上游行为（镜像 tag / 端口 / 环境变量 / flag 写法）的核验依据见 [upstream-verification.md](./upstream-verification.md)
@@ -21,6 +21,7 @@
 | `mssql_exporter` | SQL Server（市场） | `awaragi/prometheus-mssql-exporter:v1.3.0` | 4000 | single（单目标） | env | 4 |
 | `mysql_exporter` | MySQL（市场 · 多目标） | `quay.io/prometheus/mysqld-exporter:v0.15.1` | 9104 | connection（1:N 多目标） | 固定 args + config 模板 | 2 |
 | `nginx_exporter` | NGINX（市场） | `nginx/nginx-prometheus-exporter:1.4.2` | 9113 | single（单目标） | args_template | 2 |
+| `node-exporter-external` | 外部 node_exporter（登记观测） | — | 9100 | endpoint（直连原生端点） | 无表单参数 | 0 |
 | `node_exporter` | Node Exporter（主机 · DaemonSet） | `quay.io/prometheus/node-exporter:v1.9.1` | 9100 | single（单目标） | 固定 args | 0 |
 | `postgresql_exporter` | PostgreSQL（市场） | `prometheuscommunity/postgres-exporter:v0.15.0` | 9187 | single（单目标） | env | 1 |
 | `redis_exporter` | Redis（市场） | `oliver006/redis_exporter:v1.66.0` | 9121 | single（单目标） | env | 2 |
@@ -266,6 +267,15 @@ password = {{ .mysql_password }}
 | --- | --- | --- | --- | --- | --- | --- |
 | `nginx_scrape_uri` | stub_status 地址 | text | — | `http://127.0.0.1:8080/stub_status` | arg（args_template） | — |
 | `nginx_plus` | NGINX Plus | select（false / true） | — | `false` | arg（args_template） | 高级字段（折叠展示） |
+
+### node-exporter-external — 外部 node_exporter（登记观测）
+
+- 镜像 — ｜ 指标端口 `9100` ｜ 目标模式 endpoint（直连原生端点） ｜ 工作负载 none（免部署）
+- 目标契约（target_contract）：模式 `endpoint` ｜ 路径 `/metrics` ｜ 协议 `http`
+
+> 直连原生端点型：登记外部已部署的 node_exporter 采集端点，平台免部署采集器，vmagent 直抓并纳入台账与健康观测。
+
+（无表单字段）
 
 ### node_exporter — Node Exporter（主机 · DaemonSet）
 

@@ -42,7 +42,10 @@ def cell(v) -> str:
 
 
 def target_mode_label(t: dict) -> str:
-    if t.get("target_mode") == "connection":
+    tm = t.get("target_mode")
+    if tm == "endpoint":
+        return "endpoint（直连原生端点）"
+    if tm == "connection":
         return "connection（1:N 多目标）"
     if t.get("probe"):
         return "probe（探针）"
@@ -132,11 +135,13 @@ def overview_table(types: list[dict]) -> list[str]:
         "| --- | --- | --- | --- | --- | --- | --- |",
     ]
     for t in types:
+        # 免部署条目（endpoint 型）无镜像，镜像列渲染 —
+        image = f"`{cell(t['image'])}`" if t.get("image") else "—"
         lines.append(
-            "| `{}` | {} | `{}` | {} | {} | {} | {} |".format(
+            "| `{}` | {} | {} | {} | {} | {} | {} |".format(
                 cell(t.get("name")),
                 cell(t.get("label", "")),
-                cell(t.get("image", "")),
+                image,
                 t.get("metrics_port"),
                 target_mode_label(t),
                 channels_label(t),
@@ -193,12 +198,27 @@ def secret_params_table(types: list[dict]) -> list[str]:
 
 def type_section(t: dict) -> list[str]:
     out = [f"### {t.get('name')} — {cell(t.get('label', ''))}", ""]
-    wl = "daemonset（每节点）" if t.get("workload") == "daemonset" else "deployment（缺省）"
+    # endpoint 型 workload 由平台加载期归一为 none（registry.go normalizeEndpointType），
+    # 源清单可省略声明——此处按归一后语义展示
+    wl_raw = t.get("workload", "")
+    if wl_raw == "none" or t.get("target_mode") == "endpoint":
+        wl = "none（免部署）"
+    elif wl_raw == "daemonset":
+        wl = "daemonset（每节点）"
+    else:
+        wl = "deployment（缺省）"
+    image = f"`{cell(t['image'])}`" if t.get("image") else "—"
     out.append(
-        "- 镜像 `{}` ｜ 指标端口 `{}` ｜ 目标模式 {} ｜ 工作负载 {}".format(
-            cell(t.get("image", "")), t.get("metrics_port"), target_mode_label(t), wl
+        "- 镜像 {} ｜ 指标端口 `{}` ｜ 目标模式 {} ｜ 工作负载 {}".format(
+            image, t.get("metrics_port"), target_mode_label(t), wl
         )
     )
+    contract = t.get("target_contract")
+    if contract:
+        bits = [f"模式 `{contract.get('mode', '')}`", f"路径 `{contract.get('path', '')}`"]
+        if contract.get("scheme"):
+            bits.append(f"协议 `{contract['scheme']}`")
+        out.append("- 目标契约（target_contract）：" + " ｜ ".join(bits))
     for m in t.get("host_mounts") or []:
         out.append(f"- hostPath 挂载：`{m.get('host_path')}` → `{m.get('mount_path')}`")
     tols = t.get("tolerations") or []
