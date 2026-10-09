@@ -41,7 +41,7 @@ exporter-shop/
 
 保存后点击「立即拉取」，状态应为 `ok`；拉取失败或清单非法时平台保留上一次成功清单（last-good），不影响已上线 exporter。
 
-## 当前目录（13 个市场类）
+## 当前目录（13 市场类 + 1 直连型）
 
 | 类型 key | 显示名 | 指标端口 | 说明 |
 | --- | --- | --- | --- |
@@ -58,16 +58,18 @@ exporter-shop/
 | `apache_exporter` | Apache | 9117 | |
 | `blackbox_exporter` | Blackbox 探针 | 9115 | 探针型（HTTP/TCP/ICMP/DNS 等探测） |
 | `snmp_exporter` | SNMP 探针 | 9116 | 探针型（网络设备） |
+| `node-exporter-external` | 外部 node_exporter | 9100 | **直连原生端点型**（外部已部署登记观测，零工作负载） |
 
 ## 清单格式
 
 单条目 YAML 文档，顶层 `types:` 为类型定义列表（TypeDef）。字段权威定义与校验逻辑在平台仓库 `backend/internal/console/registry/registry.go`。要点：
 
-- `name`：类型 key，`^[a-z][a-z0-9_]*$`；`metrics_port` 必填；`label` 为显示名。
+- `name`：类型 key，`^[a-z](?:[a-z0-9_-]*[a-z0-9_])?$`（允许中划线，收尾禁连字符）；`metrics_port` 必填；`label` 为显示名。
 - `fields`：统一表单字段（`key/label/kind(text|number|password|select)/default/required/sensitive/options/to(env|arg|var|config)/env/advanced/hint`）。
 - **敏感字段**：`sensitive: true` 必须搭配 `kind: password`，落点只允许 `env` 或 `config`（**禁止进 args**）；`to: config` 仅用于 raw 模板凭据插值（配套 `config.secret_mount: true`，物化为 Secret，密文存储）。
 - **连接型多目标**：`target_mode: connection` 必须搭配 `config.mode: raw` + `config.secret_mount: true` + 非空 `config.template`（参照 `mysql_exporter` 条目）。
 - **探针型**：由 `probe` 声明（`path/modules/default_module/max_targets`）。
+- **直连原生端点型**：`target_mode: endpoint` + `metrics_port` + `target_contract`（`mode/path/scheme`）三件套（参照 `node-exporter-external` 条目），适用于外部已部署 exporter 的收编登记；平台加载期归一 `workload=none`（免部署、零工作负载物化，实例仅物化单个 VMStaticScrape）与 `health_path=/metrics`（声明与否都会被覆盖，可省略）；**禁止**声明 `workload` / `image` / `fields` / `config` / `requires_devices` / `probe` / `target_health_metric`。
 - 平台拉取后走与内置类型完全相同的加载期校验，**任一条目非法将整份清单拒绝**（保留 last-good）；单文件上限 2 MiB、目录模式合并上限 768 KiB。
 - 同 key 条目整体覆盖平台内置定义；优先级 内置 < Git < 页面新增。
 

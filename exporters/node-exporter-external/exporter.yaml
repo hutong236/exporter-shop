@@ -1,0 +1,27 @@
+# node-exporter-external — Exporter 商店清单（单类型源文件）
+#
+# 直连原生端点型（外部已部署登记观测）：node_exporter 已由运维在平台外的机器上
+# 独立部署（systemd / Ansible 等纳管），本条目只登记抓取目标——平台零工作负载，
+# 不重复部署采集器，vmagent 直抓目标端点，实例进台账并与部署型同权观测。
+#
+# 格式与校验权威：平台仓库 backend/internal/console/registry/registry.go（TypeDef schema）。
+# 平台经目录模式拉取本目录（Trees API 字典序逐文件合并），勿在此目录放置其他 yaml/yml 文件。
+#
+# endpoint 机制（平台 REQ-181，加载期归一，声明与否都会被覆盖）：
+#   - workload 归一为 none（免部署锚定，operator 以此为单一权威信号跳过全部工作负载物化）
+#   - health_path 平台统一归一为 /metrics（逐目标探测路径权威在 target_contract.path）
+#   - 物化产物仅单个 VMStaticScrape（无 Deployment/DaemonSet/ConfigMap/Secret）
+#   - 禁止声明：workload / image / fields / config / requires_devices / probe /
+#     target_health_metric（免部署、无认证直抓；认证字段属平台后续版本）
+#
+# 上游实际配置核验记录：docs/upstream-verification.md。
+types:
+    - name: node-exporter-external
+      label: 外部 node_exporter（登记观测）
+      preface: 直连原生端点型：登记外部已部署的 node_exporter 采集端点，平台免部署采集器，vmagent 直抓并纳入台账与健康观测。
+      target_mode: endpoint
+      metrics_port: 9100
+      target_contract:
+        mode: endpoint
+        path: /metrics
+        scheme: http

@@ -7,6 +7,7 @@
 - 本报告发现的全部不符项已在同日修正（见文末「修正记录」）；核验后状态：16/16 与上游实际配置一致
 - **2026-09-28 移除**：rabbitmq_exporter 与 haproxy_exporter 因上游仓库归档已从商店目录删除（README 目录表同步为 14 类）；本文对应小节与汇总行保留为历史核验记录，不再对应现行目录
 - **2026-10-07 移除**：clickhouse_exporter 已从商店目录删除——上游 [ClickHouse/clickhouse_exporter](https://github.com/ClickHouse/clickhouse_exporter) README 明言「Exporter could used only for old ClickHouse versions, modern versions have embedded prometheus endpoint」，新版 ClickHouse 直接用内建 Prometheus /metrics 端点，独立 exporter 仅适用老版本（README 目录表同步为 13 类）；本文对应小节与汇总行保留为历史核验记录，不再对应现行目录
+- **2026-10-09 新增**：node-exporter-external（直连原生端点型，外部已部署 node_exporter 免部署登记观测）加入商店目录（README 目录表同步为 13 市场类 + 1 直连型）；核验小节见「逐项明细」2026-10-09 增补
 
 ## 汇总
 
@@ -28,6 +29,7 @@
 | apache_exporter | quay.io/lusitaniae/apache-exporter:v1.1.0 | ✅ | ✅ 9117 | — | ✅ | ✅ 符合 | — |
 | blackbox_exporter | quay.io/prometheus/blackbox-exporter:v0.25.0 | ✅ | ✅ 9115 | — | ✅ | ✅ 符合 | — |
 | snmp_exporter | quay.io/prometheus/snmp-exporter:v0.26.0 | ✅ | ✅ 9116 | — | ❌ type 枚举含非法值（静默出错） | ❌ 模板 type 非法 | 已修正 |
+| node-exporter-external（2026-10-09） | —（免部署登记观测） | — | ✅ 9100 | — | — | ✅ 符合 | — |
 
 ## 逐项明细
 
@@ -37,6 +39,12 @@
 - 默认端口 9100：README「listens on HTTP port 9100 by default」；源码 `kingpinflag.AddFlags(..., ":9100")`（[README@v1.9.1](https://raw.githubusercontent.com/prometheus/node_exporter/v1.9.1/README.md)、[node_exporter.go@v1.9.1](https://raw.githubusercontent.com/prometheus/node_exporter/v1.9.1/node_exporter.go)）
 - `--path.procfs` / `--path.sysfs` 均有效，配合 hostPath `/proc→/host/proc`、`/sys→/host/sys` 语义正确（[paths.go@v1.9.1](https://raw.githubusercontent.com/prometheus/node_exporter/v1.9.1/collector/paths.go)）
 - **可选增强（未改）**：官方 Docker 宿主监控示例还建议挂载 `/ → /host/root` 并传 `--path.rootfs=/host/root`；缺失时无告警，但 filesystem collector 的 statfs 与 os_release collector 读到的是容器自身视图而非宿主机。如需主机磁盘使用率准确，后续可补该挂载与参数。
+
+### node-exporter-external ✅（2026-10-09 新增）
+
+- 直连原生端点型（`target_mode: endpoint`，平台 REQ-181 机制）：登记外部已部署的 node_exporter 端点，平台免部署采集器、零工作负载——**无镜像 tag / env / flag 核验维度**，条目不声明 image / fields / config / probe / workload
+- 端口 `9100` 与路径 `/metrics` 沿用 node_exporter 上游口径（见上文 node_exporter 小节：v1.9.1 默认监听 `:9100`，`/metrics` 为标准指标端点）；`target_contract: {mode: endpoint, path: /metrics, scheme: http}`
+- REQ-181 机制经平台集群实测（外部 demo 仓库，2026-10-09）：Git 源目录模式拉取成功（`ok`）；登记 2 个外部目标后 vmagent 双目标 up、采集确认 2/2；实例仅物化单个 VMStaticScrape（无任何工作负载）
 
 ### mysql_exporter ✅
 
