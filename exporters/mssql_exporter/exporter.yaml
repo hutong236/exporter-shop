@@ -38,3 +38,25 @@ types:
           sensitive: true
           to: env
           env: PASSWORD
+        - key: mssql_encrypt
+          label: TLS 加密
+          kind: select
+          default: "true"
+          options:
+            - "true"
+            - "false"
+          to: env
+          env: ENCRYPT
+          advanced: true
+          hint: 缺省 true 与上游默认等价；SQL Server 2008 R2 等老版本不支持 TLS 时改选 false
+        - key: mssql_trust_server_certificate
+          label: 信任服务器证书
+          kind: select
+          default: "true"
+          options:
+            - "true"
+            - "false"
+          to: env
+          env: TRUST_SERVER_CERTIFICATE
+          advanced: true
+          hint: 缺省 true 与上游默认等价（自签名证书场景保持 true）

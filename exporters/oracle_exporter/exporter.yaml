@@ -1,0 +1,59 @@
+# oracle_exporter — Exporter 商店清单（单类型源文件）
+#
+# 配置通道说明：YAML 配置经 raw 模板渲染（ConfigMap 挂载），模板内只写 ${VAR} 占位符——
+# 上游在配置加载期用 os.Expand 从环境变量展开（config/config.go@v2.5.0），
+# 密码等敏感值经 Secret 环境变量注入，不落渲染文件、不进命令行。
+#
+# 格式与校验权威：平台仓库 backend/internal/console/registry/registry.go（TypeDef schema）。
+# 平台经目录模式拉取本目录（Trees API 字典序逐文件合并），勿在此目录放置其他 yaml/yml 文件。
+# 上游实际配置核验记录：docs/upstream-verification.md。
+types:
+    - name: oracle_exporter
+      label: Oracle（市场）
+      preface: 数据库侧需建监控专用账号并授权（CREATE SESSION + SELECT ANY DICTIONARY，或按上游最小权限清单收敛）；连接串为 EZConnect 形态 host:port/service。镜像托管于 Oracle 容器注册表 container-registry.oracle.com，匿名即可拉取，无需 Oracle 账号，但要求集群节点可访问该公网注册表。
+      configless: false
+      requires_devices: false
+      metrics_port: 9161
+      health_path: /
+      image: container-registry.oracle.com/database/observability-exporter:2.5.0
+      args:
+        - --config.file=/exporter/config.yaml
+      listen_default: ""
+      device_port_default: 0
+      config:
+        mode: raw
+        template: |
+            databases:
+              default:
+                username: ${DB_USERNAME}
+                password: ${DB_PASSWORD}
+                url: ${DB_CONNECT_STRING}
+            metrics:
+              default: default-metrics.toml
+            log:
+              destination: /tmp/alert.log
+              interval: 15s
+        mount_path: /exporter/config.yaml
+        secret_mount: false
+      fields:
+        - key: oracle_user
+          label: 数据库账号
+          kind: text
+          required: true
+          to: env
+          env: DB_USERNAME
+        - key: oracle_password
+          label: 数据库密码
+          kind: password
+          required: true
+          sensitive: true
+          to: env
+          env: DB_PASSWORD
+          hint: 只写不回显 · 注入为 Secret 环境变量 · 渲染配置内仅 ${DB_PASSWORD} 占位（上游运行期展开）
+        - key: oracle_connect
+          label: 连接串
+          kind: text
+          required: true
+          to: env
+          env: DB_CONNECT_STRING
+          hint: host:port/service 形态（EZConnect），如 oracle:1521/orclpdb1

@@ -3,7 +3,7 @@
 > ⚠️ 本文件由 `scripts/docgen.py` 从 `exporters/*/exporter.yaml` 自动生成，请勿手改。
 > 修改请编辑对应类型的源清单后执行 `python3 scripts/docgen.py` 重新生成。
 
-- 覆盖 14 个类型 / 23 个表单字段（敏感字段 8 个），按字典序排列（与平台目录模式合并顺序一致）
+- 覆盖 17 个类型 / 32 个表单字段（敏感字段 10 个），按字典序排列（与平台目录模式合并顺序一致）
 - 落点（`to`）语义：`env` = 环境变量；`arg` = 经 `args_template` 注入命令行；`var`/`config` = 渲染进 `config.template`（`config` 仅供敏感凭据，配套 `secret_mount` 物化为 Secret）
 - 控件为 `password` 的即敏感字段（`sensitive`，二者双向绑定）：只写不回显，落点仅允许 `env`/`config`，禁止进 args
 - 字段取值与上游行为（镜像 tag / 端口 / 环境变量 / flag 写法）的核验依据见 [upstream-verification.md](./upstream-verification.md)
@@ -12,19 +12,22 @@
 
 | 类型 | 显示名 | 镜像 | 端口 | 目标模式 | 参数注入 | 字段数 |
 | --- | --- | --- | --- | --- | --- | --- |
+| `activemq-native` | 外部 ActiveMQ（登记观测） | — | 8778 | endpoint（直连原生端点） | 无表单参数 | 0 |
 | `apache_exporter` | Apache（市场） | `quay.io/lusitaniae/apache-exporter:v1.1.0` | 9117 | single（单目标） | args_template | 1 |
 | `blackbox_exporter` | Blackbox 探针（市场） | `quay.io/prometheus/blackbox-exporter:v0.25.0` | 9115 | probe（探针） | 固定 args + config 模板 | 0 |
 | `elasticsearch_exporter` | Elasticsearch（市场） | `quay.io/prometheuscommunity/elasticsearch-exporter:v1.9.0` | 9114 | single（单目标） | args_template + env | 5 |
 | `kafka_exporter` | Kafka（市场） | `danielqsj/kafka-exporter:v1.9.0` | 9308 | single（单目标） | args_template | 1 |
 | `memcached_exporter` | Memcached（市场） | `quay.io/prometheus/memcached-exporter:v0.15.1` | 9150 | single（单目标） | args_template | 1 |
 | `mongodb_exporter` | MongoDB（市场） | `percona/mongodb_exporter:0.43.1` | 9216 | single（单目标） | env | 3 |
-| `mssql_exporter` | SQL Server（市场） | `awaragi/prometheus-mssql-exporter:v1.3.0` | 4000 | single（单目标） | env | 4 |
+| `mssql_exporter` | SQL Server（市场） | `awaragi/prometheus-mssql-exporter:v1.3.0` | 4000 | single（单目标） | env | 6 |
 | `mysql_exporter` | MySQL（市场 · 多目标） | `quay.io/prometheus/mysqld-exporter:v0.15.1` | 9104 | connection（1:N 多目标） | 固定 args + config 模板 | 2 |
 | `nginx_exporter` | NGINX（市场） | `nginx/nginx-prometheus-exporter:1.4.2` | 9113 | single（单目标） | args_template | 2 |
 | `node-exporter-external` | 外部 node_exporter（登记观测） | — | 9100 | endpoint（直连原生端点） | 无表单参数 | 0 |
 | `node_exporter` | Node Exporter（主机 · DaemonSet） | `quay.io/prometheus/node-exporter:v1.9.1` | 9100 | single（单目标） | 固定 args | 0 |
+| `oracle_exporter` | Oracle（市场） | `container-registry.oracle.com/database/observability-exporter:2.5.0` | 9161 | single（单目标） | 固定 args + config 模板 + env | 3 |
 | `postgresql_exporter` | PostgreSQL（市场） | `prometheuscommunity/postgres-exporter:v0.15.0` | 9187 | single（单目标） | env | 1 |
 | `redis_exporter` | Redis（市场） | `oliver006/redis_exporter:v1.66.0` | 9121 | single（单目标） | env | 2 |
+| `rocketmq_exporter` | RocketMQ（市场） | `apache/rocketmq-exporter:0.0.2` | 5557 | single（单目标） | env | 4 |
 | `snmp_exporter` | SNMP 探针（市场） | `quay.io/prometheus/snmp-exporter:v0.26.0` | 9116 | probe（探针） | 固定 args + config 模板 | 1 |
 
 ## 参数注入方式对比
@@ -44,10 +47,17 @@
 | `mssql_exporter` | `mssql_host` | SQL Server 主机 | text | — | env `SERVER` | 环境变量 `SERVER` |
 | `mssql_exporter` | `mssql_port` | 端口 | number | `1433` | env `PORT` | 环境变量 `PORT` |
 | `mssql_exporter` | `mssql_user` | 账号 | text | — | env `USERNAME` | 环境变量 `USERNAME` |
+| `mssql_exporter` | `mssql_encrypt` | TLS 加密 | select（true / false） | `true` | env `ENCRYPT` | 环境变量 `ENCRYPT` |
+| `mssql_exporter` | `mssql_trust_server_certificate` | 信任服务器证书 | select（true / false） | `true` | env `TRUST_SERVER_CERTIFICATE` | 环境变量 `TRUST_SERVER_CERTIFICATE` |
 | `mysql_exporter` | `mysql_user` | 数据库账号 | text | `exporter` | var（config 模板插值） | config 模板插值 |
 | `nginx_exporter` | `nginx_scrape_uri` | stub_status 地址 | text | `http://127.0.0.1:8080/stub_status` | arg（args_template） | 参数 `--nginx.scrape-uri={{.nginx_scrape_uri}}` |
 | `nginx_exporter` | `nginx_plus` | NGINX Plus | select（false / true） | `false` | arg（args_template） | 参数 `{{ if eq .nginx_plus "true" }}--nginx.plus{{ end }}` |
+| `oracle_exporter` | `oracle_user` | 数据库账号 | text | — | env `DB_USERNAME` | 环境变量 `DB_USERNAME` |
+| `oracle_exporter` | `oracle_connect` | 连接串 | text | — | env `DB_CONNECT_STRING` | 环境变量 `DB_CONNECT_STRING` |
 | `redis_exporter` | `redis_addr` | Redis 地址 | text | `redis://localhost:6379` | env `REDIS_ADDR` | 环境变量 `REDIS_ADDR` |
+| `rocketmq_exporter` | `rocketmq_namesrv` | NameServer 地址 | text | `rocketmq-namesrv:9876` | env `ROCKETMQ_CONFIG_NAMESRVADDR` | 环境变量 `ROCKETMQ_CONFIG_NAMESRVADDR` |
+| `rocketmq_exporter` | `rocketmq_acl_enabled` | 启用 ACL | select（false / true） | `false` | env `ROCKETMQ_CONFIG_ENABLEACL` | 环境变量 `ROCKETMQ_CONFIG_ENABLEACL` |
+| `rocketmq_exporter` | `rocketmq_access_key` | ACL AccessKey | text | — | env `ROCKETMQ_CONFIG_ACCESSKEY` | 环境变量 `ROCKETMQ_CONFIG_ACCESSKEY` |
 
 ### 敏感字段（凭据）
 
@@ -58,11 +68,22 @@
 | `mongodb_exporter` | `mongodb_password` | 密码 | — | env `MONGODB_PASSWORD` | 环境变量 `MONGODB_PASSWORD` |
 | `mssql_exporter` | `mssql_password` | 密码 | — | env `PASSWORD` | 环境变量 `PASSWORD` |
 | `mysql_exporter` | `mysql_password` | 数据库密码 | ✅ | config（config 模板插值） | config 模板插值（Secret 挂载 `/etc/mysql_exporter/.my.cnf`） |
+| `oracle_exporter` | `oracle_password` | 数据库密码 | ✅ | env `DB_PASSWORD` | 环境变量 `DB_PASSWORD` |
 | `postgresql_exporter` | `pg_datasource` | 数据源 DSN | ✅ | env `DATA_SOURCE_NAME` | 环境变量 `DATA_SOURCE_NAME` |
 | `redis_exporter` | `redis_password` | Redis 密码 | — | env `REDIS_PASSWORD` | 环境变量 `REDIS_PASSWORD` |
+| `rocketmq_exporter` | `rocketmq_secret_key` | ACL SecretKey | — | env `ROCKETMQ_CONFIG_SECRETKEY` | 环境变量 `ROCKETMQ_CONFIG_SECRETKEY` |
 | `snmp_exporter` | `snmp_community` | SNMP 团体字（community） | ✅ | config（config 模板插值） | config 模板插值（Secret 挂载 `/etc/snmp_exporter/snmp.yml`） |
 
 ## 逐类型明细
+
+### activemq-native — 外部 ActiveMQ（登记观测）
+
+- 镜像 — ｜ 指标端口 `8778` ｜ 目标模式 endpoint（直连原生端点） ｜ 工作负载 none（免部署）
+- 目标契约（target_contract）：模式 `endpoint` ｜ 路径 `/metrics` ｜ 协议 `http`
+
+> 直连原生端点型：需在 ActiveMQ broker 侧预先挂载 jmx_exporter javaagent（平台外部前置，平台不代为部署）暴露 /metrics 后登记本端点；平台免部署采集器，vmagent 直抓并纳入台账与健康观测。指标端口按 javaagent 启动参数选定，本条目默认登记 Artemis 文档惯例 8778，实例级可改。
+
+（无表单字段）
 
 ### apache_exporter — Apache（市场）
 
@@ -216,6 +237,8 @@ modules:
 | `mssql_port` | 端口 | number | — | `1433` | env `PORT` | — |
 | `mssql_user` | 账号 | text | — | — | env `USERNAME` | — |
 | `mssql_password` | 密码 | password（敏感） | — | — | env `PASSWORD` | — |
+| `mssql_encrypt` | TLS 加密 | select（true / false） | — | `true` | env `ENCRYPT` | 高级字段（折叠展示）；缺省 true 与上游默认等价；SQL Server 2008 R2 等老版本不支持 TLS 时改选 false |
+| `mssql_trust_server_certificate` | 信任服务器证书 | select（true / false） | — | `true` | env `TRUST_SERVER_CERTIFICATE` | 高级字段（折叠展示）；缺省 true 与上游默认等价（自签名证书场景保持 true） |
 
 ### mysql_exporter — MySQL（市场 · 多目标）
 
@@ -295,6 +318,45 @@ password = {{ .mysql_password }}
 
 （无表单字段）
 
+### oracle_exporter — Oracle（市场）
+
+- 镜像 `container-registry.oracle.com/database/observability-exporter:2.5.0` ｜ 指标端口 `9161` ｜ 目标模式 single（单目标） ｜ 工作负载 deployment（缺省）
+
+> 数据库侧需建监控专用账号并授权（CREATE SESSION + SELECT ANY DICTIONARY，或按上游最小权限清单收敛）；连接串为 EZConnect 形态 host:port/service。镜像托管于 Oracle 容器注册表 container-registry.oracle.com，匿名即可拉取，无需 Oracle 账号，但要求集群节点可访问该公网注册表。
+
+固定 `args`：
+
+```text
+--config.file=/exporter/config.yaml
+```
+
+配置通道：raw 模板（ConfigMap）→ 挂载 `/exporter/config.yaml`
+
+<details><summary>config.template</summary>
+
+```text
+databases:
+  default:
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+    url: ${DB_CONNECT_STRING}
+metrics:
+  default: default-metrics.toml
+log:
+  destination: /tmp/alert.log
+  interval: 15s
+```
+
+</details>
+
+表单字段：
+
+| 字段 | 显示名 | 控件 | 必填 | 默认值 | 落点 | 说明 |
+| --- | --- | --- | --- | --- | --- | --- |
+| `oracle_user` | 数据库账号 | text | ✅ | — | env `DB_USERNAME` | — |
+| `oracle_password` | 数据库密码 | password（敏感） | ✅ | — | env `DB_PASSWORD` | 只写不回显 · 注入为 Secret 环境变量 · 渲染配置内仅 ${DB_PASSWORD} 占位（上游运行期展开） |
+| `oracle_connect` | 连接串 | text | ✅ | — | env `DB_CONNECT_STRING` | host:port/service 形态（EZConnect），如 oracle:1521/orclpdb1 |
+
 ### postgresql_exporter — PostgreSQL（市场）
 
 - 镜像 `prometheuscommunity/postgres-exporter:v0.15.0` ｜ 指标端口 `9187` ｜ 目标模式 single（单目标） ｜ 工作负载 deployment（缺省）
@@ -317,6 +379,21 @@ password = {{ .mysql_password }}
 | --- | --- | --- | --- | --- | --- | --- |
 | `redis_addr` | Redis 地址 | text | — | `redis://localhost:6379` | env `REDIS_ADDR` | — |
 | `redis_password` | Redis 密码 | password（敏感） | — | — | env `REDIS_PASSWORD` | — |
+
+### rocketmq_exporter — RocketMQ（市场）
+
+- 镜像 `apache/rocketmq-exporter:0.0.2` ｜ 指标端口 `5557` ｜ 目标模式 single（单目标） ｜ 工作负载 deployment（缺省）
+
+> 启用 ACL 的集群需在 broker 侧开通监控专用账号（aclEnable=true 并配置 plain_acl.yml，RocketMQ ≥4.4.0），再于本表单填 AccessKey/SecretKey 并置「启用 ACL」为 true；未启用 ACL 的集群保持默认即可。指标端口沿用上游缺省 5557。
+
+表单字段：
+
+| 字段 | 显示名 | 控件 | 必填 | 默认值 | 落点 | 说明 |
+| --- | --- | --- | --- | --- | --- | --- |
+| `rocketmq_namesrv` | NameServer 地址 | text | ✅ | `rocketmq-namesrv:9876` | env `ROCKETMQ_CONFIG_NAMESRVADDR` | NameServer host:port；多地址分号分隔（RocketMQ 客户端约定） |
+| `rocketmq_acl_enabled` | 启用 ACL | select（false / true） | — | `false` | env `ROCKETMQ_CONFIG_ENABLEACL` | 高级字段（折叠展示）；broker 侧启用 ACL 时必须置 true，否则凭据不被读取 |
+| `rocketmq_access_key` | ACL AccessKey | text | — | — | env `ROCKETMQ_CONFIG_ACCESSKEY` | 启用 ACL 时填写（标识符，非敏感） |
+| `rocketmq_secret_key` | ACL SecretKey | password（敏感） | — | — | env `ROCKETMQ_CONFIG_SECRETKEY` | 只写不回显 · 注入为 Secret 环境变量 · 启用 ACL 时必填 |
 
 ### snmp_exporter — SNMP 探针（市场）
 

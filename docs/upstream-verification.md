@@ -8,6 +8,7 @@
 - **2026-09-28 移除**：rabbitmq_exporter 与 haproxy_exporter 因上游仓库归档已从商店目录删除（README 目录表同步为 14 类）；本文对应小节与汇总行保留为历史核验记录，不再对应现行目录
 - **2026-10-07 移除**：clickhouse_exporter 已从商店目录删除——上游 [ClickHouse/clickhouse_exporter](https://github.com/ClickHouse/clickhouse_exporter) README 明言「Exporter could used only for old ClickHouse versions, modern versions have embedded prometheus endpoint」，新版 ClickHouse 直接用内建 Prometheus /metrics 端点，独立 exporter 仅适用老版本（README 目录表同步为 13 类）；本文对应小节与汇总行保留为历史核验记录，不再对应现行目录
 - **2026-10-09 新增**：node-exporter-external（直连原生端点型，外部已部署 node_exporter 免部署登记观测）加入商店目录（README 目录表同步为 13 市场类 + 1 直连型）；核验小节见「逐项明细」2026-10-09 增补
+- **2026-10-18 新增**：oracle_exporter、rocketmq_exporter（部署型）与 activemq-native（直连原生端点型）加入商店目录，mssql_exporter 追加 TLS 兼容字段（README 目录表同步为 15 市场类 + 2 直连型）；核验小节见「逐项明细」2026-10-18 增补。**同轮裁定**：规划中的 activemq_exporter 部署型条目经核验**不可行**（凭据仅 config-file 入口、无公开镜像可钉 tag），未登记，详见「activemq_exporter 部署型可行性核验（2026-10-18）」小节
 
 ## 汇总
 
@@ -30,6 +31,9 @@
 | blackbox_exporter | quay.io/prometheus/blackbox-exporter:v0.25.0 | ✅ | ✅ 9115 | — | ✅ | ✅ 符合 | — |
 | snmp_exporter | quay.io/prometheus/snmp-exporter:v0.26.0 | ✅ | ✅ 9116 | — | ❌ type 枚举含非法值（静默出错） | ❌ 模板 type 非法 | 已修正 |
 | node-exporter-external（2026-10-09） | —（免部署登记观测） | — | ✅ 9100 | — | — | ✅ 符合 | — |
+| oracle_exporter（2026-10-18） | container-registry.oracle.com/database/observability-exporter:2.5.0 | ✅（amd64+arm64，匿名可拉） | ✅ 9161 | ✅ DB_USERNAME / DB_PASSWORD / DB_CONNECT_STRING（配置内 `${VAR}` 运行期展开） | ✅ `--config.file` | ✅ 符合 | — |
+| rocketmq_exporter（2026-10-18） | apache/rocketmq-exporter:0.0.2 | ✅（仅 amd64） | ✅ 5557 | ✅ ROCKETMQ_CONFIG_*（Spring relaxed binding） | —（无 flag 入口，全 env） | ✅ 符合 | — |
+| activemq-native（2026-10-18） | —（免部署登记观测） | — | ✅ 8778（javaagent 惯例） | — | — | ✅ 符合 | — |
 
 ## 逐项明细
 
@@ -147,6 +151,54 @@
   - `ifAdminStatus` / `ifOperStatus` type `map→EnumAsStateSet` + IF-MIB 标准 `enum_values`（1 up / 2 down / 3 testing / 4 unknown / 5 dormant；ifOperStatus 另含 6 notPresent / 7 lowerLayerDown）
   - `sysUpTime` type `timedelta→gauge`；sysuptime 模块 `walk: [1.3.6.1.2.1.1.3]` → `get: [1.3.6.1.2.1.1.3.0]`（对齐上游 if_mib 对该标量的取法）
 - 边界说明：if_mib 的 walk 范围仅覆盖 ifTable（`1.3.6.1.2.1.2.2.1.x`），不含 ifXTable 高速计数器列（`1.3.6.1.2.1.31.1.1`）；需要时经类型覆盖扩展。
+
+### oracle_exporter ✅（2026-10-18 新增）
+
+- 上游：[oracle/oracle-db-appdev-monitoring](https://github.com/oracle/oracle-db-appdev-monitoring)（Oracle 官方「Oracle AI Database Metrics Exporter」，由原 oracle-db-exporter 更名而来，活跃维护；原 `oracle/oracle-db-exporter` 仓库已 404）
+- tag `2.5.0` 存在且 **amd64 + arm64 双架构、匿名可拉**（registry API manifest list 实测，无需 Oracle 账号；compose 示例同 tag）：`https://container-registry.oracle.com/v2/database/observability-exporter/manifests/2.5.0`
+- 默认端口 9161：Dockerfile `EXPOSE 9161`；config.go 缺省 `:9161`（[Dockerfile@v2.5.0](https://raw.githubusercontent.com/oracle/oracle-db-appdev-monitoring/v2.5.0/Dockerfile)、[config/config.go@v2.5.0](https://raw.githubusercontent.com/oracle/oracle-db-appdev-monitoring/v2.5.0/config/config.go)）
+- **YAML 配置 + `${VAR}` 环境变量运行期展开**：配置经 `--config.file` flag（env `CONFIG_FILE` 亦可）加载；加载期先 `os.Expand`（`os.Getenv` 展开 `${VAR}`）再 `yaml.UnmarshalStrict`（[config/config.go@v2.5.0](https://raw.githubusercontent.com/oracle/oracle-db-appdev-monitoring/v2.5.0/config/config.go)）；官方 compose 即 `password: ${DB_PASSWORD}` + `DB_USERNAME` / `DB_PASSWORD` / `DB_CONNECT_STRING` 三个 env（[compose.yaml@v2.5.0](https://raw.githubusercontent.com/oracle/oracle-db-appdev-monitoring/v2.5.0/docker-compose/compose.yaml)、[exporter/config.yaml@v2.5.0](https://raw.githubusercontent.com/oracle/oracle-db-appdev-monitoring/v2.5.0/docker-compose/exporter/config.yaml)）
+- 条目形态与该机制对齐：raw 模板渲染挂载 `/exporter/config.yaml`，模板内**只写 `${DB_USERNAME}` / `${DB_PASSWORD}` / `${DB_CONNECT_STRING}` 占位**（无明文敏感值，故 `secret_mount: false` 物化 ConfigMap）；三字段全部 env 落点，其中数据库密码 `sensitive: true` + `kind: password` 经平台 Secret 环境变量注入——密码既不落渲染文件也不进命令行
+- 模板字段照抄上游示例（`databases.default.username/password/url`、`metrics.default: default-metrics.toml`、`log` 段）：上游为 `UnmarshalStrict`，未知键即启动失败，扩展模板须对照上游 schema
+- 镜像注册表为 `container-registry.oracle.com`（公网）：集群节点需可达；已验证匿名拉取，无许可墙
+
+### rocketmq_exporter ✅（2026-10-18 新增）
+
+- tag `0.0.2` 存在（与 GitHub tag `rocketmq-exporter-0.0.2` 对应，Apache 官方发布）：[Docker Hub API](https://hub.docker.com/v2/repositories/apache/rocketmq-exporter/tags/0.0.2)；**仅 amd64**（无 arm64 manifest，记录为风险；amd64 节点集群不受影响——mssql v1.3.0 亦为 amd64-only 先例）
+- 镜像 ENTRYPOINT `java -jar rocketmq-exporter.jar`（registry config blob 实测），Spring Boot 2.7.11 可执行 jar（[pom.xml@rocketmq-exporter-0.0.2](https://raw.githubusercontent.com/apache/rocketmq-exporter/rocketmq-exporter-0.0.2/pom.xml)）→ **全部配置可经环境变量 relaxed binding 生效**
+- 配置属性（[application.yml@rocketmq-exporter-0.0.2](https://raw.githubusercontent.com/apache/rocketmq-exporter/rocketmq-exporter-0.0.2/src/main/resources/application.yml)、[RMQConfigure.java@rocketmq-exporter-0.0.2](https://raw.githubusercontent.com/apache/rocketmq-exporter/rocketmq-exporter-0.0.2/src/main/java/org/apache/rocketmq/exporter/config/RMQConfigure.java) `@ConfigurationProperties(prefix = "rocketmq.config")`）：
+  - `rocketmq.config.namesrvAddr`（缺省 `127.0.0.1:9876`）→ env `ROCKETMQ_CONFIG_NAMESRVADDR`
+  - `rocketmq.config.enableACL`（缺省 false）→ env `ROCKETMQ_CONFIG_ENABLEACL`
+  - `rocketmq.config.accessKey` / `rocketmq.config.secretKey`（`enableACL() == true` 时生效，注释原文「true: accessKey and secretKey would be used」）→ env `ROCKETMQ_CONFIG_ACCESSKEY` / `ROCKETMQ_CONFIG_SECRETKEY`
+- 默认端口 5557（`server.port`）、指标路径 `/metrics`（`webTelemetryPath`），镜像 `EXPOSE 5557/tcp` 实测一致
+- **ACL 凭据通道**：SecretKey `sensitive: true` + `kind: password` → 仅 env 落点（平台 Secret 环境变量注入）；条目**不声明任何 args_template**（凭据零命令行暴露）。AccessKey 为标识符，按目录既有惯例（`ES_USERNAME` / `USERNAME` / `SERVER` 均 text 非敏感）作 text 字段
+- `health_path: /metrics`：上游 Spring 无 `/` 根路由（未映射路径返回 404），`/metrics` 恒 200；其余部署型条目均有 `/` 落地页故用 `/`，本条目为目录内首个取 `/metrics` 的部署型条目
+- Spring relaxed binding 口径：env 名去掉 `ROCKETMQ_CONFIG_` 前缀、下划线转点、大小写不敏感即得属性名（`ROCKETMQ_CONFIG_NAMESRVADDR` → `rocketmq.config.namesrvaddr` ↔ `rocketmq.config.namesrvAddr`），为 Spring Boot 标准属性源行为，不依赖镜像内任何包装脚本
+
+### activemq-native ✅（2026-10-18 新增）
+
+- 直连原生端点型（`target_mode: endpoint`，平台 REQ-181 机制）：登记 broker 侧 jmx_exporter javaagent 暴露的 `/metrics`，平台免部署采集器、零工作负载——**无镜像 tag / env / flag 核验维度**，条目不声明 image / fields / config / probe / workload
+- 外部前置（平台不可强制，仅 preface 文档化）：ActiveMQ broker 侧挂载 [prometheus/jmx_exporter](https://github.com/prometheus/jmx_exporter) javaagent（`-javaagent:jmx_prometheus_javaagent.jar=<port>:config.yaml`）
+- 端口 `8778`：实现期选定（ActiveMQ Artemis 官方文档 jmx exporter javaagent 示例惯例端口），已在 preface 注明「实例级可改」；`target_contract: {mode: endpoint, path: /metrics, scheme: http}`
+- 禁止键（image / fields / config / requires_devices / probe / target_health_metric / workload）程序化核验全零命中（validate.py endpoint 矩阵通过）
+
+### activemq_exporter 部署型可行性核验（2026-10-18）❌ 不可行，未登记
+
+规划（INTAKE 商店目录补充缺口产品类型）拟以 [atompi/activemq_exporter](https://github.com/atompi/activemq_exporter) 为上游登记部署型条目（「Jolokia URL（非敏感）+ 凭据 env」）。实现期按所钉 tag 核验，结论为**不可行**，触发红线（凭据 env 通道不存在），依据如下：
+
+1. **凭据仅 config-file 入口，无 env 入口**：上游（main 分支，仓库无任何 tag/release）凭据 `jolokia.username` / `jolokia.password` 只能写入 YAML 配置文件，由 `--collector.config.file` flag 指定路径、`yaml.Unmarshal` 整体加载（[activemq_exporter.go@main](https://raw.githubusercontent.com/atompi/activemq_exporter/main/activemq_exporter.go)、[options/options.go@main](https://raw.githubusercontent.com/atompi/activemq_exporter/main/options/options.go)）；kingpin 声明中唯一 `Envar` 是 `GOMAXPROCS`，Jolokia URL / 凭据均无 env 入口。「凭据 sensitive+password、落点仅 env」无法满足（如改走 config secret_mount 通道则偏离批准设计，需重新裁定）
+2. **无公开镜像可钉 tag**：Docker Hub `atompi` 名下 56 个仓库无 `activemq-exporter`（[仓库 API 显式 404](https://hub.docker.com/v2/repositories/atompi/activemq-exporter/)）；ghcr.io 匿名拉取 DENIED；GitHub 无 tag/release；其自带 docker-compose 引用的 `atompi/activemq-exporter:latest` 在 Docker Hub 上不存在。「镜像显式 tag」硬规则无可钉对象
+3. **INTAKE 前提不成立**：该仓库并非 rm-hull 的 fork（GitHub `fork: False`；rm-hull 名下无 activemq/jolokia 仓库）——「= rm-hull 活跃 fork」的活跃性/继承性论据失效
+4. **无替代公开镜像**（尽调）：Docker Hub 以 `activemq` / `jolokia` / `activemq exporter` 全量检索仅命中 broker 镜像与 Jolokia agent 基础镜像；GitHub 检索 `activemq_exporter` / `activemq-exporter prometheus` / `activemq jolokia` 仅 atompi（无镜像）与 pulord/activemq-jolokia-exporter（2019 年停更、无 README、无镜像）等死项
+
+处置：按红线**停下并回报**（本单未登记该条目、未硬凑 flag 注入）；ActiveMQ 场景由 `activemq-native`（直连端点登记）承载。若后续仍需部署型条目，需平台侧配套：构建并发布该上游镜像（可钉 tag）+ 批准凭据改走 config secret_mount 通道的设计修订。
+
+### mssql_exporter TLS 兼容字段 ✅（2026-10-18 增补）
+
+- `ENCRYPT` / `TRUST_SERVER_CERTIFICATE` 环境变量实测存在于 v1.3.0：`encrypt: process.env["ENCRYPT"] !== undefined ? process.env["ENCRYPT"] === "true" : true`，`trustServerCertificate` 同构（兜底 `: true`）（[src/index.js@v1.3.0](https://raw.githubusercontent.com/awaragi/prometheus-mssql-exporter/v1.3.0/src/index.js)）；README@v1.3.0 两条均标注「optional **defaults to true**」（[README@v1.3.0](https://raw.githubusercontent.com/awaragi/prometheus-mssql-exporter/v1.3.0/README.md)）
+- 新增两个 advanced select env 字段 `mssql_encrypt`（env `ENCRYPT`）/ `mssql_trust_server_certificate`（env `TRUST_SERVER_CERTIFICATE`），`sensitive: false`，default 均为 `"true"`：**显式等价上游默认**（上游未收到 env 时的兜底值即 true，注入 true 行为零变化），SQL Server 2008 R2 等老版本 TLS 兼容场景由用户显式改选 false
+- **与规划裁定 #2 的偏差记录**：裁定原文「trust_server_certificate default "false"（显式等价上游默认）」——其「上游默认为 false」的前提与 v1.3.0 事实不符（README 与源码均为 true）。若注入 false，既有实例下次重部署时 `trustServerCertificate` 将由 true 变 false，使用自签名证书的 SQL Server 会校验失败断连，且不满足批准 delta 的 Scenario「未填新字段时 env 注入与上游默认等价」。故按裁定自身的「等价上游默认」意图与上游事实取 `"true"`（ENCRYPT 裁定值本即 true，无偏差）；已同步通报协调者待确认
+- 既有 4 字段（SERVER/PORT/USERNAME/PASSWORD）与镜像/端口声明**逐字节不变**（纯尾部追加）
 
 ## 修正记录（2026-09-27）
 

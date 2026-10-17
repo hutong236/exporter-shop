@@ -1,0 +1,53 @@
+# rocketmq_exporter — Exporter 商店清单（单类型源文件）
+#
+# 参数通道说明：上游为 Spring Boot 2.7.11（@ConfigurationProperties prefix="rocketmq.config"），
+# 全部配置经环境变量 relaxed binding 生效（ROCKETMQ_CONFIG_* → rocketmq.config.*），
+# 本条目不声明 args_template——ACL 凭据只经 Secret 环境变量注入，不进命令行。
+#
+# 格式与校验权威：平台仓库 backend/internal/console/registry/registry.go（TypeDef schema）。
+# 平台经目录模式拉取本目录（Trees API 字典序逐文件合并），勿在此目录放置其他 yaml/yml 文件。
+# 上游实际配置核验记录：docs/upstream-verification.md。
+types:
+    - name: rocketmq_exporter
+      label: RocketMQ（市场）
+      preface: 启用 ACL 的集群需在 broker 侧开通监控专用账号（aclEnable=true 并配置 plain_acl.yml，RocketMQ ≥4.4.0），再于本表单填 AccessKey/SecretKey 并置「启用 ACL」为 true；未启用 ACL 的集群保持默认即可。指标端口沿用上游缺省 5557。
+      configless: true
+      requires_devices: false
+      metrics_port: 5557
+      health_path: /metrics
+      image: apache/rocketmq-exporter:0.0.2
+      listen_default: ""
+      device_port_default: 0
+      fields:
+        - key: rocketmq_namesrv
+          label: NameServer 地址
+          kind: text
+          required: true
+          default: rocketmq-namesrv:9876
+          to: env
+          env: ROCKETMQ_CONFIG_NAMESRVADDR
+          hint: NameServer host:port；多地址分号分隔（RocketMQ 客户端约定）
+        - key: rocketmq_acl_enabled
+          label: 启用 ACL
+          kind: select
+          default: "false"
+          options:
+            - "false"
+            - "true"
+          to: env
+          env: ROCKETMQ_CONFIG_ENABLEACL
+          advanced: true
+          hint: broker 侧启用 ACL 时必须置 true，否则凭据不被读取
+        - key: rocketmq_access_key
+          label: ACL AccessKey
+          kind: text
+          to: env
+          env: ROCKETMQ_CONFIG_ACCESSKEY
+          hint: 启用 ACL 时填写（标识符，非敏感）
+        - key: rocketmq_secret_key
+          label: ACL SecretKey
+          kind: password
+          sensitive: true
+          to: env
+          env: ROCKETMQ_CONFIG_SECRETKEY
+          hint: 只写不回显 · 注入为 Secret 环境变量 · 启用 ACL 时必填
