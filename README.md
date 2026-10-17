@@ -41,7 +41,7 @@ exporter-shop/
 
 保存后点击「立即拉取」，状态应为 `ok`；拉取失败或清单非法时平台保留上一次成功清单（last-good），不影响已上线 exporter。
 
-## 当前目录（13 市场类 + 1 直连型）
+## 当前目录（15 市场类 + 2 直连型）
 
 | 类型 key | 显示名 | 指标端口 | 说明 |
 | --- | --- | --- | --- |
@@ -51,14 +51,17 @@ exporter-shop/
 | `mongodb_exporter` | MongoDB | 9216 | |
 | `redis_exporter` | Redis | 9121 | |
 | `elasticsearch_exporter` | Elasticsearch | 9114 | |
-| `mssql_exporter` | SQL Server | 4000 | |
+| `oracle_exporter` | Oracle | 9161 | Oracle 官方观测 exporter；YAML 配置经 raw 模板渲染 + `${VAR}` 环境变量运行期展开（密码不落渲染文件） |
+| `mssql_exporter` | SQL Server | 4000 | 高级字段含 TLS 兼容开关（`ENCRYPT` / `TRUST_SERVER_CERTIFICATE`，支撑 SQL Server 2008 R2 老版本） |
 | `kafka_exporter` | Kafka | 9308 | 地址经 `--kafka.server` 参数注入（env 不生效） |
+| `rocketmq_exporter` | RocketMQ | 5557 | Apache 官方镜像；NameServer 地址与 ACL 凭据全部经 env 注入（Spring Boot relaxed binding），凭据不进命令行 |
 | `memcached_exporter` | Memcached | 9150 | |
 | `nginx_exporter` | NGINX | 9113 | |
 | `apache_exporter` | Apache | 9117 | |
 | `blackbox_exporter` | Blackbox 探针 | 9115 | 探针型（HTTP/TCP/ICMP/DNS 等探测） |
 | `snmp_exporter` | SNMP 探针 | 9116 | 探针型（网络设备） |
 | `node-exporter-external` | 外部 node_exporter | 9100 | **直连原生端点型**（外部已部署登记观测，零工作负载） |
+| `activemq-native` | 外部 ActiveMQ | 8778 | **直连原生端点型**（broker 侧预挂 jmx_exporter javaagent 后登记观测，零工作负载） |
 
 ## 清单格式
 
